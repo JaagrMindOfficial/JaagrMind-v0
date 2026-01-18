@@ -123,18 +123,27 @@ const AdminDashboard = () => {
                                 <Pie
                                     data={bucketData}
                                     cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
+                                    cy="45%"
+                                    innerRadius={50}
+                                    outerRadius={80}
                                     paddingAngle={5}
                                     dataKey="value"
-                                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                                 >
                                     {bucketData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
-                                <Tooltip />
+                                <Tooltip formatter={(value, name) => [`${value} students`, name]} />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    formatter={(value, entry) => {
+                                        const item = bucketData.find(d => d.name === value);
+                                        const total = bucketData.reduce((sum, d) => sum + d.value, 0);
+                                        const percent = total > 0 ? ((item?.value || 0) / total * 100).toFixed(0) : 0;
+                                        return `${value} (${percent}%)`;
+                                    }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (
