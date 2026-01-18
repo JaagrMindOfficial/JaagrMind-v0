@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads
+backend/uploads/logos/*
+!backend/uploads/logos/.gitkeep
+
+# Debug
+.npm
+.eslintcache
+
+# Coverage
+coverage/
+
+# Vite
+*.local
