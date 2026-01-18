@@ -733,8 +733,9 @@ router.get('/assessment-link/:assessmentId', protect, isSchoolAdmin, async (req,
             return res.status(404).json({ message: 'Assessment not found' });
         }
 
-        // Generate a shareable link
-        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        // Use only the primary frontend URL (first one if comma-separated)
+        const frontendUrls = process.env.FRONTEND_URL || 'https://www.jaagrmind.com';
+        const baseUrl = frontendUrls.split(',')[0].trim();
         const link = `${baseUrl}/student/login?school=${req.school.schoolId}&test=${req.params.assessmentId}`;
 
         res.json({
