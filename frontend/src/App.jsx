@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useAuth } from './context/AuthContext';
 
 // Pages
@@ -42,7 +43,8 @@ function App() {
     const { isAuthenticated, user } = useAuth();
 
     return (
-        <Routes>
+        <>
+            <Routes>
             {/* Public Routes */}
             <Route path="/login" element={
                 isAuthenticated ? (
@@ -129,7 +131,9 @@ function App() {
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            </Routes>
+            <Analytics />
+        </>
     );
 }
 
