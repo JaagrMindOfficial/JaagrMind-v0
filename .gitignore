@@ -42,3 +42,5 @@ coverage/
 #build file
 ftd.zip
 backend/seedAdmin.js
+frontend/.env.development
+frontend/.env.production
