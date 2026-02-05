@@ -29,6 +29,9 @@ const StudentLogin = () => {
         const schoolId = searchParams.get('school');
         if (schoolId) {
             fetchSchoolInfo(schoolId);
+        } else {
+            // No school ID means invalid access
+            setError('Invalid access. Please use the test link provided by your school.');
         }
     }, [searchParams]);
 
@@ -38,15 +41,36 @@ const StudentLogin = () => {
             setSchoolInfo(response.data);
         } catch (error) {
             console.error('Error fetching school info:', error);
+            setError('Invalid school link. Please contact your school for the correct link.');
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        const schoolId = searchParams.get('school');
+        if (!schoolId) {
+            setError('Invalid access. Please use the test link provided by your school.');
+            return;
+        }
+
+        // Validate Mobile Number if provided
+        if (mobileNumber && !/^[0-9]{10}$/.test(mobileNumber)) {
+            setError('Please enter a valid 10-digit mobile number');
+            return;
+        }
+
+        // Validate Email if provided
+        if (email && !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+
         setLoading(true);
 
-        const result = await login({ accessId, mobileNumber, email }, 'student');
+        // Include schoolId from URL in login credentials
+        const result = await login({ accessId, mobileNumber, email, schoolId }, 'student');
 
         setLoading(false);
 

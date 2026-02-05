@@ -8,16 +8,42 @@ const { protect, isStudent, generateToken } = require('../middleware/auth');
 const { getBucketLabel, getSectionName } = require('../utils/exportData');
 
 // @route   POST /api/student/login
-// @desc    Student login with Access ID
+// @desc    Student login with Access ID (requires school context from URL)
 // @access  Public
 router.post('/login', async (req, res) => {
     try {
-        const { accessId, mobileNumber, email } = req.body;
+        const { accessId, mobileNumber, email, schoolId } = req.body;
 
         if (!accessId) {
             return res.status(400).json({ message: 'Access ID is required' });
         }
 
+        // schoolId is now required for school-specific links
+        if (!schoolId) {
+            return res.status(400).json({
+                message: 'Invalid access. Please use your school\'s test link to login.'
+            });
+        }
+
+        // First verify the school exists
+        const school = await School.findOne({
+            schoolId: schoolId.toUpperCase(),
+            isActive: true
+        }).select('name logo schoolId isBlocked');
+
+        if (!school) {
+            return res.status(400).json({
+                message: 'Invalid school link. Please contact your school for the correct link.'
+            });
+        }
+
+        if (school.isBlocked) {
+            return res.status(403).json({
+                message: 'This school has been blocked. Please contact administrator.'
+            });
+        }
+
+        // Find the student
         const student = await Student.findOne({
             accessId: accessId.toUpperCase().trim(),
             isActive: true
@@ -25,6 +51,13 @@ router.post('/login', async (req, res) => {
 
         if (!student) {
             return res.status(404).json({ message: 'Invalid Access ID' });
+        }
+
+        // CRITICAL: Verify student belongs to the school from the URL
+        if (student.schoolId?.schoolId?.toUpperCase() !== schoolId.toUpperCase()) {
+            return res.status(403).json({
+                message: 'This Access ID does not belong to this school. Please use the correct school link.'
+            });
         }
 
         // Update optional contact info if provided

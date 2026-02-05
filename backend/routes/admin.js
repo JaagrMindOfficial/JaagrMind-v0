@@ -6,10 +6,12 @@ const Assessment = require('../models/Assessment');
 const Student = require('../models/Student');
 const Submission = require('../models/Submission');
 const ArchivedData = require('../models/ArchivedData');
+const SchoolCredentials = require('../models/SchoolCredentials');
 const { protect, isAdmin, generateToken } = require('../middleware/auth');
 const { generateSchoolId, generateSchoolPassword } = require('../utils/idGenerator');
 const { exportSubmissionsToExcel, calculateAnalytics } = require('../utils/exportData');
 const { logoUpload, deleteFromS3 } = require('../utils/s3Upload');
+const { sendSchoolCredentialsEmail, sendPasswordChangedEmail } = require('../utils/emailService');
 
 // Use S3 upload for logos
 const upload = logoUpload;
@@ -319,12 +321,24 @@ router.get('/schools', protect, isAdmin, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
         const skip = (page - 1) * limit;
 
-        // Get total count first
-        const total = await School.countDocuments({ isActive: true });
+        // Build search query
+        const query = { isActive: true };
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            query.$or = [
+                { name: searchRegex },
+                { schoolId: searchRegex },
+                { email: searchRegex }
+            ];
+        }
 
-        const schools = await School.find({ isActive: true })
+        // Get total count first
+        const total = await School.countDocuments(query);
+
+        const schools = await School.find(query)
             .populate('assignedTests', 'title isDefault')
             .select('-password')
             .sort({ createdAt: -1 })
@@ -365,11 +379,22 @@ router.get('/schools', protect, isAdmin, async (req, res) => {
 });
 
 // @route   POST /api/admin/schools
-// @desc    Register a new school
+// @desc    Register a new school (with email for login)
 // @access  Admin
 router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res) => {
     try {
-        const { name, address, phone, email, isDataVisibleToSchool } = req.body;
+        const { name, address, phone, email, isDataVisibleToSchool, sendEmail } = req.body;
+
+        // Validate email is required for new schools
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required for school registration' });
+        }
+
+        // Check if email already exists
+        const existingSchool = await School.findOne({ email: email.toLowerCase() });
+        if (existingSchool) {
+            return res.status(400).json({ message: 'A school with this email already exists' });
+        }
 
         // Generate unique school ID and password
         const schoolId = await generateSchoolId(School);
@@ -378,22 +403,53 @@ router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res
         // Get default assessment
         const defaultAssessment = await Assessment.findOne({ isDefault: true });
 
+        // Determine login URL
+        const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:5173';
+        const loginUrl = `${frontendUrl}/login`;
+
         // Create school
         const school = await School.create({
             schoolId,
             name,
+            email: email.toLowerCase(),
             address,
             contact: { phone, email },
             password: plainPassword,
             plainPassword: plainPassword,
+            mustChangePassword: true,
             isDataVisibleToSchool: isDataVisibleToSchool === 'true' || isDataVisibleToSchool === true,
             logo: req.file ? req.file.location : '',
             assignedTests: defaultAssessment ? [defaultAssessment._id] : []
         });
 
+        // Store credentials in separate collection for tracking
+        await SchoolCredentials.create({
+            schoolId: school._id,
+            email: email.toLowerCase(),
+            schoolName: name,
+            plainPassword: plainPassword
+        });
+
+        // Send credentials email if requested
+        let emailSent = false;
+        if (sendEmail === 'true' || sendEmail === true) {
+            emailSent = await sendSchoolCredentialsEmail(
+                email.toLowerCase(),
+                name,
+                plainPassword,
+                loginUrl
+            );
+            if (emailSent) {
+                school.credentialsEmailSent = true;
+                school.lastCredentialsEmailSentAt = new Date();
+                await school.save();
+            }
+        }
+
         res.status(201).json({
             _id: school._id,
             schoolId: school.schoolId,
+            email: school.email,
             name: school.name,
             password: plainPassword,
             plainPassword: plainPassword,
@@ -403,7 +459,10 @@ router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res
             isDataVisibleToSchool: school.isDataVisibleToSchool,
             isBlocked: school.isBlocked,
             assignedTests: school.assignedTests,
-            message: 'School registered successfully. Save the credentials!'
+            credentialsEmailSent: emailSent,
+            message: emailSent
+                ? 'School registered successfully. Credentials email sent!'
+                : 'School registered successfully. Save the credentials!'
         });
     } catch (error) {
         console.error('Create school error:', error);
@@ -411,7 +470,65 @@ router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res
     }
 });
 
-// @route   PUT /api/admin/schools/:id
+// @route   POST /api/admin/schools/:id/send-credentials
+// @desc    Send or resend credentials email to school
+// @access  Admin
+router.post('/schools/:id/send-credentials', protect, isAdmin, async (req, res) => {
+    try {
+        const { regeneratePassword } = req.body;
+
+        const school = await School.findById(req.params.id);
+        if (!school) {
+            return res.status(404).json({ message: 'School not found' });
+        }
+
+        if (!school.email) {
+            return res.status(400).json({ message: 'School does not have an email configured' });
+        }
+
+        let password = school.plainPassword;
+
+        // Regenerate password if requested
+        if (regeneratePassword === 'true' || regeneratePassword === true) {
+            password = generateSchoolPassword();
+            school.password = password;
+            school.plainPassword = password;
+            school.mustChangePassword = true;
+
+            // Update credentials collection
+            await SchoolCredentials.updatePassword(school._id, password);
+        }
+
+        // Determine login URL
+        const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:5173';
+        const loginUrl = `${frontendUrl}/login`;
+
+        // Send email
+        const emailSent = await sendSchoolCredentialsEmail(
+            school.email,
+            school.name,
+            password,
+            loginUrl
+        );
+
+        if (emailSent) {
+            school.credentialsEmailSent = true;
+            school.lastCredentialsEmailSentAt = new Date();
+            await school.save();
+
+            res.json({
+                success: true,
+                message: 'Credentials email sent successfully',
+                passwordRegenerated: regeneratePassword === 'true' || regeneratePassword === true
+            });
+        } else {
+            res.status(500).json({ message: 'Failed to send credentials email' });
+        }
+    } catch (error) {
+        console.error('Send credentials error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 // @desc    Update school
 // @access  Admin
 router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, res) => {

@@ -23,7 +23,10 @@ export const AuthProvider = ({ children }) => {
         try {
             let response;
 
-            if (role === 'admin') {
+            // Unified login uses email domain-based routing
+            if (role === 'unified') {
+                response = await api.post('/api/auth/login', credentials);
+            } else if (role === 'admin') {
                 response = await api.post('/api/admin/login', credentials);
             } else if (role === 'school') {
                 response = await api.post('/api/school/login', credentials);

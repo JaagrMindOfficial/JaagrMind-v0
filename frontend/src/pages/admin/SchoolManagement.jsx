@@ -12,7 +12,8 @@ import {
     faCopy,
     faSchool,
     faSearch,
-    faPlus
+    faPlus,
+    faPaperPlane
 } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
 import Pagination from '../../components/common/Pagination';
@@ -50,7 +51,9 @@ const SchoolManagement = () => {
         address: '',
         phone: '',
         email: '',
+        confirmEmail: '', // For email confirmation
         isDataVisibleToSchool: false,
+        sendEmail: true, // Send credentials email by default
         logo: null
     });
 
@@ -88,12 +91,31 @@ const SchoolManagement = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Validate email confirmation for new schools
+        if (!editingSchool && formData.email !== formData.confirmEmail) {
+            toast.error('Emails do not match! Please confirm the email address.');
+            return;
+        }
+
+        // Validate Phone Number
+        if (formData.phone && !/^[0-9]{10}$/.test(formData.phone)) {
+            toast.error('Please enter a valid 10-digit phone number');
+            return;
+        }
+
+        // Validate Email Format
+        if (formData.email && !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+
         const form = new FormData();
         form.append('name', formData.name);
         form.append('address', formData.address);
         form.append('phone', formData.phone);
         form.append('email', formData.email);
         form.append('isDataVisibleToSchool', formData.isDataVisibleToSchool);
+        form.append('sendEmail', formData.sendEmail); // Add sendEmail option
         if (formData.logo) {
             form.append('logo', formData.logo);
         }
@@ -110,8 +132,12 @@ const SchoolManagement = () => {
                 });
                 setCredentials({
                     schoolId: response.data.schoolId,
-                    password: response.data.password
+                    password: response.data.password,
+                    emailSent: response.data.credentialsEmailSent
                 });
+                if (response.data.credentialsEmailSent) {
+                    toast.success('School created and credentials email sent!');
+                }
             }
 
             fetchSchools();
@@ -156,8 +182,10 @@ const SchoolManagement = () => {
                 name: school.name,
                 address: school.address || '',
                 phone: school.contact?.phone || '',
-                email: school.contact?.email || '',
+                email: school.email || school.contact?.email || '',
+                confirmEmail: '', // Not needed for editing
                 isDataVisibleToSchool: school.isDataVisibleToSchool,
+                sendEmail: false, // Don't send email when editing
                 logo: null
             });
         } else {
@@ -167,7 +195,9 @@ const SchoolManagement = () => {
                 address: '',
                 phone: '',
                 email: '',
+                confirmEmail: '',
                 isDataVisibleToSchool: false,
+                sendEmail: true, // Default to send email for new schools
                 logo: null
             });
         }
@@ -184,9 +214,29 @@ const SchoolManagement = () => {
             address: '',
             phone: '',
             email: '',
+            confirmEmail: '',
             isDataVisibleToSchool: false,
+            sendEmail: true,
             logo: null
         });
+    };
+
+    // Send or resend credentials email
+    const handleSendCredentials = async (school, regenerate = false) => {
+        try {
+            const response = await api.post(`/api/admin/schools/${school._id}/send-credentials`, {
+                regeneratePassword: regenerate
+            });
+            if (response.data.success) {
+                toast.success(regenerate
+                    ? 'New password generated and email sent!'
+                    : 'Credentials email sent successfully!');
+                fetchSchools();
+            }
+        } catch (error) {
+            console.error('Error sending credentials:', error);
+            toast.error(error.response?.data?.message || 'Failed to send email');
+        }
     };
 
     const openTestsModal = (school) => {
@@ -257,6 +307,8 @@ const SchoolManagement = () => {
             }
         }
     };
+
+
 
     const handleAssignAll = (checked) => {
         setAssignAll(checked);
@@ -414,18 +466,29 @@ const SchoolManagement = () => {
                             </div>
                         </div>
 
-                        {/* Credentials Display */}
-                        <div className="credentials-box">
+                        {/* Credentials Display - Email only (password hidden for security) */}
+                        <div className="credentials-box" style={{ padding: '10px 12px' }}>
                             <div className="credential-row">
-                                <span className="credential-label">ID:</span>
-                                <span className="credential-value">{school.schoolId}</span>
-                                <button className="copy-btn" onClick={() => copyToClipboard(school.schoolId)}><FontAwesomeIcon icon={faCopy} /></button>
-                            </div>
-                            <div className="credential-row">
-                                <span className="credential-label">Pass:</span>
-                                <span className="credential-value">{school.plainPassword || '••••••••'}</span>
-                                {school.plainPassword && (
-                                    <button className="copy-btn" onClick={() => copyToClipboard(school.plainPassword)}><FontAwesomeIcon icon={faCopy} /></button>
+                                <span className="credential-label">Email:</span>
+                                <span className="credential-value" style={{ fontSize: '0.85rem' }}>{school.email || 'Not set'}</span>
+                                {school.email && (
+                                    <>
+                                        <button
+                                            className="copy-btn"
+                                            onClick={() => copyToClipboard(school.email)}
+                                            title="Copy Email"
+                                        >
+                                            <FontAwesomeIcon icon={faCopy} />
+                                        </button>
+                                        <button
+                                            className="copy-btn"
+                                            onClick={() => handleSendCredentials(school, false)}
+                                            title="Resend Credentials Email"
+                                            style={{ marginLeft: '4px', color: 'var(--primary-purple)' }}
+                                        >
+                                            <FontAwesomeIcon icon={faPaperPlane} size="sm" />
+                                        </button>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -536,21 +599,27 @@ const SchoolManagement = () => {
                                 {credentials ? (
                                     <div className="credentials-display">
                                         <p className="credentials-note">
-                                            Save these credentials! They are also visible on the school card.
+                                            ✅ School registered successfully! Credentials have been saved.
                                         </p>
+                                        <div className="credential-item">
+                                            <label>Login Email</label>
+                                            <div className="credential-value">{formData.email}</div>
+                                        </div>
                                         <div className="credential-item">
                                             <label>School ID</label>
                                             <div className="credential-value">{credentials.schoolId}</div>
                                         </div>
-                                        <div className="credential-item">
-                                            <label>Password</label>
-                                            <div className="credential-value">{credentials.password}</div>
-                                        </div>
+                                        {credentials.emailSent && (
+                                            <p style={{ color: 'var(--success)', textAlign: 'center', marginTop: '12px' }}>
+                                                📧 Login credentials sent to {formData.email}
+                                            </p>
+                                        )}
                                         <button
                                             className="btn btn-primary"
+                                            style={{ marginTop: '16px' }}
                                             onClick={() => {
                                                 navigator.clipboard.writeText(
-                                                    `School ID: ${credentials.schoolId}\nPassword: ${credentials.password}`
+                                                    `Email: ${formData.email}\nSchool ID: ${credentials.schoolId}`
                                                 );
                                                 toast.success('Credentials copied to clipboard!');
                                             }}
@@ -595,17 +664,49 @@ const SchoolManagement = () => {
                                                 />
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">Email</label>
+                                                <label className="form-label">Email {!editingSchool && '*'}</label>
                                                 <input
                                                     type="email"
                                                     className="form-input"
                                                     value={formData.email}
                                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    placeholder="Email address"
+                                                    placeholder="Email address (used for login)"
+                                                    required={!editingSchool}
                                                 />
                                             </div>
                                         </div>
 
+                                        {/* Confirm Email - Only for new schools */}
+                                        {!editingSchool && (
+                                            <div className="form-group">
+                                                <label className="form-label">Confirm Email *</label>
+                                                <input
+                                                    type="email"
+                                                    className="form-input"
+                                                    value={formData.confirmEmail}
+                                                    onChange={(e) => setFormData({ ...formData, confirmEmail: e.target.value })}
+                                                    placeholder="Re-enter email address"
+                                                    required
+                                                    style={{
+                                                        borderColor: formData.confirmEmail && formData.email !== formData.confirmEmail
+                                                            ? 'var(--danger)'
+                                                            : formData.confirmEmail && formData.email === formData.confirmEmail
+                                                                ? 'var(--success)'
+                                                                : undefined
+                                                    }}
+                                                />
+                                                {formData.confirmEmail && formData.email !== formData.confirmEmail && (
+                                                    <small style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>
+                                                        Emails do not match
+                                                    </small>
+                                                )}
+                                                {formData.confirmEmail && formData.email === formData.confirmEmail && (
+                                                    <small style={{ color: 'var(--success)', fontSize: '0.8rem' }}>
+                                                        ✓ Emails match
+                                                    </small>
+                                                )}
+                                            </div>
+                                        )}
                                         <div className="form-group">
                                             <label className="form-label">School Logo</label>
                                             <input
@@ -626,6 +727,19 @@ const SchoolManagement = () => {
                                                 <span>Allow school to view student analytics</span>
                                             </label>
                                         </div>
+
+                                        {!editingSchool && (
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.sendEmail}
+                                                        onChange={(e) => setFormData({ ...formData, sendEmail: e.target.checked })}
+                                                    />
+                                                    <span>📧 Send login credentials to school email</span>
+                                                </label>
+                                            </div>
+                                        )}
 
                                         <div className="modal-footer">
                                             <button type="button" className="btn btn-outline" onClick={closeModal}>

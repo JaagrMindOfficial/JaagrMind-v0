@@ -1,11 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useAuth } from './context/AuthContext';
 
 // Pages
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import ChangePassword from './pages/ChangePassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SchoolManagement from './pages/admin/SchoolManagement';
 import AssessmentManagement from './pages/admin/AssessmentManagement';
@@ -44,8 +43,7 @@ function App() {
     const { isAuthenticated, user } = useAuth();
 
     return (
-        <>
-            <Routes>
+        <Routes>
             {/* Public Routes */}
             <Route path="/login" element={
                 isAuthenticated ? (
@@ -61,6 +59,9 @@ function App() {
                     <Settings />
                 </ProtectedRoute>
             } />
+
+            {/* Password Change Route for Schools */}
+            <Route path="/change-password" element={<ChangePassword />} />
 
             {/* Student Routes - Public login, protected assessment */}
             <Route path="/student/login" element={<StudentLogin />} />
@@ -132,10 +133,7 @@ function App() {
 
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <Analytics />
-            <SpeedInsights />
-        </>
+        </Routes>
     );
 }
 

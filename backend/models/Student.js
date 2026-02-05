@@ -81,12 +81,14 @@ const studentSchema = new mongoose.Schema({
     },
     mobileNumber: {
         type: String,
-        trim: true
+        trim: true,
+        match: [/^[0-9]{10}$/, 'Please fill a valid 10-digit mobile number']
     },
     email: {
         type: String,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
     },
     testStatus: [testStatusSchema],
     createdAt: {
@@ -101,6 +103,6 @@ const studentSchema = new mongoose.Schema({
 
 // Index for faster queries
 studentSchema.index({ schoolId: 1, class: 1, section: 1 });
-studentSchema.index({ accessId: 1 });
+// accessId unique constraint already creates an index
 
 module.exports = mongoose.model('Student', studentSchema);

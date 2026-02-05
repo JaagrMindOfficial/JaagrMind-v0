@@ -12,6 +12,15 @@ const schoolSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    // Primary email for login (required for new unified login)
+    email: {
+        type: String,
+        unique: true,
+        sparse: true, // Allows null for existing records during migration
+        lowercase: true,
+        trim: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+    },
     logo: {
         type: String,
         default: ''
@@ -21,8 +30,14 @@ const schoolSchema = new mongoose.Schema({
         trim: true
     },
     contact: {
-        phone: String,
-        email: String
+        phone: {
+            type: String,
+            match: [/^[0-9]{10}$/, 'Please fill a valid 10-digit phone number']
+        },
+        email: {
+            type: String,
+            match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+        }
     },
     password: {
         type: String,
@@ -43,6 +58,18 @@ const schoolSchema = new mongoose.Schema({
     isBlocked: {
         type: Boolean,
         default: false
+    },
+    // New fields for unified login
+    mustChangePassword: {
+        type: Boolean,
+        default: true
+    },
+    credentialsEmailSent: {
+        type: Boolean,
+        default: false
+    },
+    lastCredentialsEmailSentAt: {
+        type: Date
     },
     createdAt: {
         type: Date,

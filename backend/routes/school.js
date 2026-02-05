@@ -7,9 +7,11 @@ const Student = require('../models/Student');
 const Assessment = require('../models/Assessment');
 const Submission = require('../models/Submission');
 const ArchivedData = require('../models/ArchivedData');
+const SchoolCredentials = require('../models/SchoolCredentials');
 const { protect, isSchoolAdmin, generateToken } = require('../middleware/auth');
 const { generateAccessId, generateBulkAccessIds } = require('../utils/idGenerator');
 const { exportAccessIdsToExcel, calculateAnalytics, getSectionName } = require('../utils/exportData');
+const { sendPasswordChangedEmail } = require('../utils/emailService');
 
 // Configure multer for Excel uploads
 const upload = multer({
@@ -54,14 +56,64 @@ router.post('/login', async (req, res) => {
         res.json({
             _id: school._id,
             schoolId: school.schoolId,
+            email: school.email,
             name: school.name,
             logo: school.logo,
             isDataVisibleToSchool: school.isDataVisibleToSchool,
+            mustChangePassword: school.mustChangePassword || false,
             role: 'school',
             token: generateToken(school._id, 'school')
         });
     } catch (error) {
         console.error('School login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/school/change-password
+// @desc    Change school password (mandatory on first login)
+// @access  School Admin
+router.put('/change-password', protect, isSchoolAdmin, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+
+        const school = await School.findById(req.school._id);
+        if (!school) {
+            return res.status(404).json({ message: 'School not found' });
+        }
+
+        // Verify current password (skip if first-time change)
+        if (!school.mustChangePassword) {
+            const isMatch = await school.matchPassword(currentPassword);
+            if (!isMatch) {
+                return res.status(401).json({ message: 'Current password is incorrect' });
+            }
+        }
+
+        // Update password
+        school.password = newPassword;
+        school.plainPassword = newPassword;
+        school.mustChangePassword = false;
+        await school.save();
+
+        // Update SchoolCredentials
+        await SchoolCredentials.updatePassword(school._id, newPassword);
+
+        // Send notification email
+        if (school.email) {
+            await sendPasswordChangedEmail(school.email, school.name);
+        }
+
+        res.json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+    } catch (error) {
+        console.error('Change password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
