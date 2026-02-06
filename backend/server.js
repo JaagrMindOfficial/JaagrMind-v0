@@ -15,7 +15,7 @@ const studentRoutes = require('./routes/student');
 
 // Initialize express
 const app = express();
-
+app.set('trust proxy', 1);
 // Connect to database
 connectDB();
 
