@@ -94,17 +94,43 @@ const sendTicketCreatedEmail = async (school, ticket) => {
     }
 };
 
-const sendTicketStatusUpdateEmail = async (schoolEmail, ticket) => {
-    const subject = `[Ticket Update] ${ticket.subject} is now ${ticket.status}`;
-    const html = `
-        <div style="font-family: Arial, sans-serif; color: #333;">
-            <h2>Ticket Updated</h2>
-            <p>Hello,</p>
-            <p>The status of your ticket <strong>#${ticket._id.toString().slice(-6)}</strong> has been updated to <strong>${ticket.status.toUpperCase()}</strong>.</p>
-            <p><a href="${process.env.FRONTEND_URL}/school/support">Click here to view your ticket</a></p>
-            <p>Best regards,<br>JaagrMind Support Team</p>
-        </div>
-    `;
+const sendTicketStatusUpdateEmail = async (ticket, newStatus) => {
+    const schoolEmail = ticket.school.email;
+    const schoolName = ticket.school.name;
+    const ticketId = ticket._id.toString().slice(-6);
+
+    let subject = `[Ticket Update] ${ticket.subject} is now ${newStatus}`;
+    let html = '';
+
+    if (newStatus === 'resolved') {
+        subject = `[Resolved] Ticket #${ticketId}: ${ticket.subject}`;
+        html = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2>Ticket Resolved</h2>
+                <p>Hello ${schoolName},</p>
+                <p>We are pleased to inform you that your support ticket <strong>#${ticketId}</strong> has been marked as <strong>RESOLVED</strong>.</p>
+                <p><strong>Subject:</strong> ${ticket.subject}</p>
+                <hr>
+                <p>If you believe this issue is not resolved, or if you have further questions, you can reply to this email or reopen the ticket from your dashboard.</p>
+                <p><a href="${process.env.FRONTEND_URL}/school/support" style="background-color: #8B5CF6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">View Ticket</a></p>
+                <br>
+                <p>Thank you for using JaagrMind.</p>
+                <p>Best regards,<br>JaagrMind Support Team</p>
+            </div>
+        `;
+    } else {
+        html = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2>Ticket Status Updated</h2>
+                <p>Hello ${schoolName},</p>
+                <p>The status of your ticket <strong>#${ticketId}</strong> has been updated to <strong>${newStatus.toUpperCase()}</strong>.</p>
+                <p><strong>Subject:</strong> ${ticket.subject}</p>
+                <p><a href="${process.env.FRONTEND_URL}/school/support">Click here to view your ticket</a></p>
+                <p>Best regards,<br>JaagrMind Support Team</p>
+            </div>
+        `;
+    }
+
     await sendEmail(schoolEmail, subject, html);
 };
 

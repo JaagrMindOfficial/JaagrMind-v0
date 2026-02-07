@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faCheckCircle, faClock, faSpinner, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faFilter, faCheckCircle, faClock, faSpinner, faArrowRight, faTimes, faPlay } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -143,9 +143,9 @@ const AdminTickets = () => {
 
     return (
         <Layout title="Support Tickets" subtitle="Manage and resolve school inquiries">
-            <div className="grid grid-3">
-                {/* valid ticket list - full width if no ticket selected, or 2/3 if selected */}
-                <div style={{ gridColumn: selectedTicket ? 'span 2' : 'span 3' }}>
+            <div className="grid grid-3" style={{ position: 'relative', zIndex: 1 }}>
+                {/* valid ticket list - always full width */}
+                <div style={{ gridColumn: 'span 3' }}>
                     <div className="card mb-6">
                         <div className="flex justify-between items-center mb-6" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
                             <div className="flex gap-4" style={{ display: 'flex', gap: '16px' }}>
@@ -212,9 +212,69 @@ const AdminTickets = () => {
                                                 <td>{getStatusBadge(ticket.status)}</td>
                                                 <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
                                                 <td>
-                                                    <button className="btn-icon" title="View Details">
-                                                        <FontAwesomeIcon icon={faEye} />
-                                                    </button>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        {ticket.status === 'open' && (
+                                                            <button
+                                                                className="btn-icon"
+                                                                title="Mark In Progress"
+                                                                onClick={() => handleStatusUpdate(ticket._id, 'in_progress')}
+                                                                style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '8px',
+                                                                    background: 'var(--warning)',
+                                                                    color: 'white',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                <FontAwesomeIcon icon={faPlay} />
+                                                            </button>
+                                                        )}
+
+                                                        {ticket.status !== 'resolved' && (
+                                                            <button
+                                                                className="btn-icon"
+                                                                title="Mark Resolved"
+                                                                onClick={() => handleStatusUpdate(ticket._id, 'resolved')}
+                                                                style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '8px',
+                                                                    background: 'var(--success)',
+                                                                    color: 'white',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                <FontAwesomeIcon icon={faCheckCircle} />
+                                                            </button>
+                                                        )}
+
+                                                        <button className="btn-icon" title="View Details" onClick={() => setSelectedTicket(ticket)} style={{
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            borderRadius: '8px',
+                                                            background: 'var(--primary-purple)',
+                                                            color: 'white',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s'
+                                                        }}>
+                                                            <FontAwesomeIcon icon={faArrowRight} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -224,144 +284,189 @@ const AdminTickets = () => {
                         )}
                     </div>
                 </div>
-
-                {/* Ticket Details Sidebar */}
-                {selectedTicket && (
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="card"
-                        style={{ height: 'fit-content' }}
-                    >
-                        <div className="flex justify-between items-start mb-4" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 className="card-title">Ticket Details</h3>
-                            <button
-                                className="btn-icon"
-                                onClick={() => setSelectedTicket(null)}
-                                style={{ fontSize: '1.2rem' }}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        {/* Status Actions */}
-                        <div className="flex gap-2 mb-6" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                            {selectedTicket.status !== 'pending' && (
-                                <button
-                                    className="btn btn-sm"
-                                    style={{ border: '1px solid var(--warning)', color: 'var(--warning)', background: 'transparent', padding: '4px 8px', fontSize: '0.8rem' }}
-                                    onClick={() => handleStatusUpdate(selectedTicket._id, 'pending')}
-                                >
-                                    Mark Pending
-                                </button>
-                            )}
-                            {selectedTicket.status !== 'in-progress' && (
-                                <button
-                                    className="btn btn-sm"
-                                    style={{ border: '1px solid var(--info)', color: 'var(--info)', background: 'transparent', padding: '4px 8px', fontSize: '0.8rem' }}
-                                    onClick={() => handleStatusUpdate(selectedTicket._id, 'in-progress')}
-                                >
-                                    Mark In Progress
-                                </button>
-                            )}
-                            {selectedTicket.status !== 'resolved' && (
-                                <button
-                                    className="btn btn-sm"
-                                    style={{ background: 'var(--success)', color: 'white', padding: '4px 8px', fontSize: '0.8rem' }}
-                                    onClick={() => handleStatusUpdate(selectedTicket._id, 'resolved')}
-                                >
-                                    Mark Resolved
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="mb-6">
-                            <h4 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>{selectedTicket.subject}</h4>
-                            <div className="flex gap-2 mb-4" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                                {getStatusBadge(selectedTicket.status)}
-                                {getPriorityBadge(selectedTicket.priority)}
-                                <span className="badge" style={{ textTransform: 'capitalize' }}>{selectedTicket.category}</span>
-                            </div>
-
-                            <div className="flex flex-col gap-2 mb-4" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
-                                    <strong>Submitted by:</strong> {selectedTicket.school?.name}
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
-                                    <strong>Date:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}
-                                </div>
-                            </div>
-
-                            {/* Conversation Thread */}
-                            <div style={{
-                                background: 'var(--bg-secondary)',
-                                padding: '16px',
-                                borderRadius: '8px',
-                                marginBottom: '24px',
-                                maxHeight: '400px',
-                                overflowY: 'auto'
-                            }}>
-                                {/* Original Message */}
-                                <div style={{ marginBottom: '20px' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>{selectedTicket.school?.name} (Original Request)</div>
-                                    <div style={{ background: 'white', padding: '12px', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                        <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{selectedTicket.message}</p>
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(selectedTicket.createdAt).toLocaleString()}</div>
-                                </div>
-
-                                {/* Responses */}
-                                {selectedTicket.responses && selectedTicket.responses.map((resp, idx) => (
-                                    <div key={idx} style={{
-                                        marginBottom: '20px',
-                                        textAlign: resp.sender === 'admin' ? 'right' : 'left'
-                                    }}>
-                                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>
-                                            {resp.sender === 'admin' ? 'Support Team' : selectedTicket.school?.name}
-                                        </div>
-                                        <div style={{
-                                            background: resp.sender === 'admin' ? 'var(--primary-purple)' : 'white',
-                                            color: resp.sender === 'admin' ? 'white' : 'inherit',
-                                            padding: '12px',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                            display: 'inline-block',
-                                            maxWidth: '85%',
-                                            textAlign: 'left'
-                                        }}>
-                                            <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{resp.message}</p>
-                                        </div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(resp.timestamp).toLocaleString()}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Reply Box */}
-                            <div className="mt-4">
-                                <label className="form-label">Reply</label>
-                                <textarea
-                                    className="form-input"
-                                    rows="3"
-                                    placeholder="Type your reply..."
-                                    value={replyMessage}
-                                    onChange={(e) => setReplyMessage(e.target.value)}
-                                ></textarea>
-                                <div className="flex justify-end mt-2" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                                    <button
-                                        className="btn btn-primary btn-sm"
-                                        onClick={handleSendReply}
-                                        disabled={!replyMessage.trim()}
-                                    >
-                                        Send Reply
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Status Actions removed from bottom, moved to top */}
-                    </motion.div>
-                )}
             </div>
+
+            {/* Ticket Details Modal Overlay */}
+            {selectedTicket && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(30, 50, 100, 0.5)', // Semi-blue transparent backdrop
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 1000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2rem'
+                }} onClick={() => setSelectedTicket(null)}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="card"
+                        style={{
+                            width: '100%',
+                            maxWidth: '800px',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            margin: '0 auto',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            padding: 0
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Fixed Header */}
+                        <div style={{
+                            padding: '16px',
+                            borderBottom: '1px solid var(--border-color)',
+                            background: 'inherit',
+                            flexShrink: 0
+                        }}>
+                            <div className="flex justify-between items-start mb-2" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                <h3 className="card-title" style={{ fontSize: '1.2rem', marginBottom: 0 }}>Ticket Details</h3>
+                                <button
+                                    className="btn-icon"
+                                    onClick={() => setSelectedTicket(null)}
+                                    style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '8px',
+                                        background: 'var(--primary-bg)',
+                                        color: 'var(--text-muted)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faTimes} />
+                                </button>
+                            </div>
+
+                            {/* Status Actions */}
+                            <div className="flex gap-2 mb-3" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {selectedTicket.status !== 'pending' && (
+                                    <button
+                                        className="btn btn-sm"
+                                        style={{ border: '1px solid var(--warning)', color: 'var(--warning)', background: 'transparent', padding: '2px 8px', fontSize: '0.75rem' }}
+                                        onClick={() => handleStatusUpdate(selectedTicket._id, 'pending')}
+                                    >
+                                        Mark Pending
+                                    </button>
+                                )}
+                                {selectedTicket.status !== 'in-progress' && (
+                                    <button
+                                        className="btn btn-sm"
+                                        style={{ border: '1px solid var(--info)', color: 'var(--info)', background: 'transparent', padding: '2px 8px', fontSize: '0.75rem' }}
+                                        onClick={() => handleStatusUpdate(selectedTicket._id, 'in-progress')}
+                                    >
+                                        Mark In Progress
+                                    </button>
+                                )}
+                                {selectedTicket.status !== 'resolved' && (
+                                    <button
+                                        className="btn btn-sm"
+                                        style={{ background: 'var(--success)', color: 'white', padding: '2px 8px', fontSize: '0.75rem' }}
+                                        onClick={() => handleStatusUpdate(selectedTicket._id, 'resolved')}
+                                    >
+                                        Mark Resolved
+                                    </button>
+                                )}
+                            </div>
+
+                            <div>
+                                <h4 style={{ fontSize: '1rem', marginBottom: '4px' }}>{selectedTicket.subject}</h4>
+                                <div className="flex gap-2 mb-2" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    {getStatusBadge(selectedTicket.status)}
+                                    {getPriorityBadge(selectedTicket.priority)}
+                                    <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,0,0,0.05)', textTransform: 'capitalize' }}>{selectedTicket.category}</span>
+                                </div>
+
+                                <div className="flex gap-4" style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: 'var(--text-light)' }}>
+                                    <div><strong>By:</strong> {selectedTicket.school?.name}</div>
+                                    <div><strong>Date:</strong> {new Date(selectedTicket.createdAt).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Scrollable Chat Area */}
+                        <div style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '16px',
+                            background: 'var(--bg-secondary)'
+                        }}>
+                            {/* Original Message */}
+                            <div style={{ marginBottom: '16px' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>{selectedTicket.school?.name} (Original Request)</div>
+                                <div style={{ background: 'white', color: '#000000', padding: '12px', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                    <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: '#000000' }}>{selectedTicket.message}</p>
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(selectedTicket.createdAt).toLocaleString()}</div>
+                            </div>
+
+                            {/* Responses */}
+                            {selectedTicket.responses && selectedTicket.responses.map((resp, idx) => (
+                                <div key={idx} style={{
+                                    marginBottom: '16px',
+                                    textAlign: resp.sender === 'admin' ? 'right' : 'left'
+                                }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>
+                                        {resp.sender === 'admin' ? 'Support Team' : selectedTicket.school?.name}
+                                    </div>
+                                    <div style={{
+                                        background: resp.sender === 'admin' ? 'var(--primary-purple)' : 'white',
+                                        color: '#000000',
+                                        padding: '10px 14px',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        display: 'inline-block',
+                                        maxWidth: '85%',
+                                        textAlign: 'left'
+                                    }}>
+                                        <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: '#000000' }}>{resp.message}</p>
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(resp.timestamp).toLocaleString()}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Fixed Footer (Reply) */}
+                        <div style={{
+                            padding: '16px',
+                            borderTop: '1px solid var(--border-color)',
+                            background: 'var(--bg-card)',
+                            flexShrink: 0
+                        }}>
+                            <textarea
+                                className="form-input"
+                                rows="2"
+                                placeholder="Type your reply..."
+                                value={replyMessage}
+                                onChange={(e) => setReplyMessage(e.target.value)}
+                                style={{ marginBottom: '8px', resize: 'none' }}
+                            ></textarea>
+                            <div className="flex justify-end" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={handleSendReply}
+                                    disabled={!replyMessage.trim()}
+                                    style={{ padding: '6px 16px' }}
+                                >
+                                    Send Reply
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </Layout>
     );
 };

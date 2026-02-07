@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faHeadset, faEnvelope, faPhone, faClock, faTicket } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faHeadset, faEnvelope, faPhone, faClock, faTicket, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -123,9 +123,9 @@ const SchoolSupport = () => {
 
     return (
         <Layout title="Support & Help" subtitle="Get assistance or report issues">
-            <div className="grid grid-3">
-                {/* Contact Form - Spans 2 columns */}
-                <div style={{ gridColumn: selectedTicket ? 'span 1' : 'span 2', transition: 'grid-column 0.3s' }}>
+            <div className="grid grid-3" style={{ position: 'relative', zIndex: 1 }}>
+                {/* Contact Form - Always Spans 2 columns */}
+                <div style={{ gridColumn: 'span 2' }}>
                     <motion.div
                         className="card mb-6"
                         initial={{ opacity: 0, y: 20 }}
@@ -309,7 +309,19 @@ const SchoolSupport = () => {
                                                 <td>{getStatusBadge(ticket.status)}</td>
                                                 <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
                                                 <td>
-                                                    <button className="btn-icon" title="View Details">
+                                                    <button className="btn-icon" title="View Details" style={{
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '8px',
+                                                        background: 'var(--primary-purple)',
+                                                        color: 'white',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}>
                                                         <FontAwesomeIcon icon={faTicket} />
                                                     </button>
                                                 </td>
@@ -322,189 +334,241 @@ const SchoolSupport = () => {
                     </motion.div>
                 </div>
 
-                {/* Right Column Area */}
-                {selectedTicket ? (
-                    /* Ticket Details - Spans 2 columns */
+                {/* Right Column Area - Contact Info & Urgent Help - Always Visible */}
+                <div>
                     <motion.div
                         className="card mb-4"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        style={{ marginBottom: '24px', gridColumn: 'span 2' }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        style={{ marginBottom: '24px' }}
                     >
-                        <div className="flex justify-between items-start mb-4" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 className="card-title">Ticket Details</h3>
-                            <button
-                                className="btn-icon"
-                                onClick={() => setSelectedTicket(null)}
-                                style={{ fontSize: '1.2rem' }}
-                            >
-                                ×
-                            </button>
-                        </div>
+                        <h3 className="card-title mb-4" style={{ marginBottom: '16px' }}>Contact Information</h3>
 
-                        <div className="mb-6">
-                            <h4 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>{selectedTicket.subject}</h4>
-                            <div className="flex gap-2 mb-4" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                                {getStatusBadge(selectedTicket.status)}
-                                <span style={{ fontSize: '0.8rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.05)', textTransform: 'capitalize' }}>{selectedTicket.priority}</span>
+                        <div className="flex flex-col gap-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                <div style={{
+                                    width: '36px', height: '36px',
+                                    background: 'var(--primary-bg)',
+                                    borderRadius: '8px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--primary-purple)'
+                                }}>
+                                    <FontAwesomeIcon icon={faEnvelope} />
+                                </div>
+                                <div>
+                                    <h5 style={{ marginBottom: '4px' }}>Email Us</h5>
+                                    <p style={{ fontSize: '0.9rem' }}>support@jaagrmind.com</p>
+                                </div>
                             </div>
 
-                            {/* Conversation Thread */}
-                            <div style={{
-                                background: 'var(--bg-secondary)',
-                                padding: '16px',
-                                borderRadius: '8px',
-                                marginBottom: '24px',
-                                maxHeight: '400px',
-                                overflowY: 'auto'
-                            }}>
-                                {/* Original Message */}
-                                <div style={{ marginBottom: '20px' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>You (Original Request)</div>
-                                    <div style={{ background: 'white', padding: '12px', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                        <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{selectedTicket.message}</p>
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(selectedTicket.createdAt).toLocaleString()}</div>
+                            <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                <div style={{
+                                    width: '36px', height: '36px',
+                                    background: 'var(--primary-bg)',
+                                    borderRadius: '8px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--primary-purple)'
+                                }}>
+                                    <FontAwesomeIcon icon={faPhone} />
                                 </div>
-
-                                {/* Responses */}
-                                {selectedTicket.responses && selectedTicket.responses.map((resp, idx) => (
-                                    <div key={idx} style={{
-                                        marginBottom: '20px',
-                                        textAlign: resp.sender === 'school' ? 'right' : 'left'
-                                    }}>
-                                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>
-                                            {resp.sender === 'school' ? 'You' : 'Support Team'}
-                                        </div>
-                                        <div style={{
-                                            background: resp.sender === 'school' ? 'var(--primary-purple)' : 'white',
-                                            color: resp.sender === 'school' ? 'white' : 'inherit',
-                                            padding: '12px',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                            display: 'inline-block',
-                                            maxWidth: '85%',
-                                            textAlign: 'left'
-                                        }}>
-                                            <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{resp.message}</p>
-                                        </div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(resp.timestamp).toLocaleString()}</div>
-                                    </div>
-                                ))}
+                                <div>
+                                    <h5 style={{ marginBottom: '4px' }}>Call Us</h5>
+                                    <p style={{ fontSize: '0.9rem' }}>+91-8373922112</p>
+                                </div>
                             </div>
 
-                            {/* Reply Box */}
-                            <div className="mt-4">
-                                <label className="form-label">Reply</label>
-                                <textarea
-                                    className="form-input"
-                                    rows="3"
-                                    placeholder="Type your reply..."
-                                    value={replyMessage}
-                                    onChange={(e) => setReplyMessage(e.target.value)}
-                                    disabled={selectedTicket.status === 'resolved'}
-                                ></textarea>
-                                <div className="flex justify-end mt-2" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                                    <button
-                                        className="btn btn-primary btn-sm"
-                                        onClick={handleSendReply}
-                                        disabled={!replyMessage.trim() || selectedTicket.status === 'resolved'}
-                                    >
-                                        Send Reply
-                                    </button>
+                            <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                <div style={{
+                                    width: '36px', height: '36px',
+                                    background: 'var(--primary-bg)',
+                                    borderRadius: '8px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--primary-purple)'
+                                }}>
+                                    <FontAwesomeIcon icon={faClock} />
                                 </div>
-                                {selectedTicket.status === 'resolved' && (
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '8px', textAlign: 'center' }}>
-                                        This ticket is resolved. Please create a new ticket for further assistance.
-                                    </p>
-                                )}
+                                <div>
+                                    <h5 style={{ marginBottom: '4px' }}>Support Hours</h5>
+                                    <p style={{ fontSize: '0.9rem' }}>Mon - Fri: 9AM - 6PM IST (GMT +5:30)</p>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
-                ) : (
-                    /* Default Sidebar - Contact Info & Urgent Help */
-                    <div>
-                        <motion.div
-                            className="card mb-4"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            style={{ marginBottom: '24px' }}
-                        >
-                            <h3 className="card-title mb-4" style={{ marginBottom: '16px' }}>Contact Information</h3>
 
-                            <div className="flex flex-col gap-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                                    <div style={{
-                                        width: '36px', height: '36px',
-                                        background: 'var(--primary-bg)',
-                                        borderRadius: '8px',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: 'var(--primary-purple)'
-                                    }}>
-                                        <FontAwesomeIcon icon={faEnvelope} />
-                                    </div>
-                                    <div>
-                                        <h5 style={{ marginBottom: '4px' }}>Email Us</h5>
-                                        <p style={{ fontSize: '0.9rem' }}>support@jaagrmind.com</p>
-                                    </div>
-                                </div>
+                    <motion.div
+                        className="card"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                        style={{
+                            background: 'linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-dark) 100%)',
+                            color: 'white'
+                        }}
+                    >
+                        <h3 style={{ color: 'white', marginBottom: '12px' }}>Need Urgent Help?</h3>
+                        <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
+                            For critical issues affecting exams in progress, please use our emergency hotline.
+                        </p>
+                        <button className="btn" style={{ background: 'white', color: 'var(--primary-purple)', width: '100%' }}>
+                            Call Emergency Line
+                        </button>
+                    </motion.div>
+                </div>
+            </div>
 
-                                <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                                    <div style={{
-                                        width: '36px', height: '36px',
-                                        background: 'var(--primary-bg)',
+            {/* Ticket Details Modal Overlay */}
+            {selectedTicket && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(30, 50, 100, 0.5)', // Semi-blue transparent backdrop
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 1000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2rem'
+                }} onClick={() => setSelectedTicket(null)}>
+                    <motion.div
+                        className="card"
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        style={{
+                            width: '100%',
+                            maxWidth: '800px',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden', // No scroll on main container
+                            position: 'relative',
+                            margin: '0 auto',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            padding: 0 // Reset padding as we'll add it to sections
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Fixed Header Section */}
+                        <div style={{
+                            padding: '16px',
+                            borderBottom: '1px solid var(--border-color)',
+                            background: 'inherit',
+                            flexShrink: 0
+                        }}>
+                            <div className="flex justify-between items-start mb-2" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <h3 className="card-title" style={{ fontSize: '1.2rem', marginBottom: 0 }}>Ticket Details</h3>
+                                <button
+                                    className="btn-icon"
+                                    onClick={() => setSelectedTicket(null)}
+                                    style={{
+                                        width: '32px',
+                                        height: '32px',
                                         borderRadius: '8px',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: 'var(--primary-purple)'
-                                    }}>
-                                        <FontAwesomeIcon icon={faPhone} />
-                                    </div>
-                                    <div>
-                                        <h5 style={{ marginBottom: '4px' }}>Call Us</h5>
-                                        <p style={{ fontSize: '0.9rem' }}>+1 (555) 123-4567</p>
-                                    </div>
-                                </div>
+                                        background: 'var(--primary-bg)',
+                                        color: 'var(--text-muted)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faTimes} />
+                                </button>
+                            </div>
 
-                                <div className="flex items-start gap-3" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                                    <div style={{
-                                        width: '36px', height: '36px',
-                                        background: 'var(--primary-bg)',
-                                        borderRadius: '8px',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: 'var(--primary-purple)'
-                                    }}>
-                                        <FontAwesomeIcon icon={faClock} />
-                                    </div>
-                                    <div>
-                                        <h5 style={{ marginBottom: '4px' }}>Support Hours</h5>
-                                        <p style={{ fontSize: '0.9rem' }}>Mon - Fri: 9AM - 6PM EST</p>
-                                    </div>
+                            <div>
+                                <h4 style={{ fontSize: '1rem', marginBottom: '6px' }}>{selectedTicket.subject}</h4>
+                                <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
+                                    {getStatusBadge(selectedTicket.status)}
+                                    <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,0,0,0.05)', textTransform: 'capitalize' }}>{selectedTicket.priority}</span>
+                                    <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,0,0,0.05)', textTransform: 'capitalize' }}>{selectedTicket.category}</span>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
 
-                        <motion.div
-                            className="card"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            style={{
-                                background: 'linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-dark) 100%)',
-                                color: 'white'
-                            }}
-                        >
-                            <h3 style={{ color: 'white', marginBottom: '12px' }}>Need Urgent Help?</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
-                                For critical issues affecting exams in progress, please use our emergency hotline.
-                            </p>
-                            <button className="btn" style={{ background: 'white', color: 'var(--primary-purple)', width: '100%' }}>
-                                Call Emergency Line
-                            </button>
-                        </motion.div>
-                    </div>
-                )}
-            </div>
+                        {/* Scrollable Chat Section */}
+                        <div style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '16px',
+                            background: 'var(--bg-secondary)'
+                        }}>
+                            {/* Original Message */}
+                            <div style={{ marginBottom: '16px' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>You (Original Request)</div>
+                                <div style={{ background: 'white', color: '#000000', padding: '12px', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                    <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: '#000000' }}>{selectedTicket.message}</p>
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(selectedTicket.createdAt).toLocaleString()}</div>
+                            </div>
+
+                            {/* Responses */}
+                            {selectedTicket.responses && selectedTicket.responses.map((resp, idx) => (
+                                <div key={idx} style={{
+                                    marginBottom: '16px',
+                                    textAlign: resp.sender === 'school' ? 'right' : 'left'
+                                }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>
+                                        {resp.sender === 'school' ? 'You' : 'Support Team'}
+                                    </div>
+                                    <div style={{
+                                        background: resp.sender === 'school' ? 'var(--primary-purple)' : 'white',
+                                        color: '#000000',
+                                        padding: '10px 14px',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        display: 'inline-block',
+                                        maxWidth: '85%',
+                                        textAlign: 'left'
+                                    }}>
+                                        <p style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: '#000000' }}>{resp.message}</p>
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '4px' }}>{new Date(resp.timestamp).toLocaleString()}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Fixed Footer Section (Reply) */}
+                        <div style={{
+                            padding: '16px',
+                            borderTop: '1px solid var(--border-color)',
+                            background: 'var(--bg-card)',
+                            flexShrink: 0
+                        }}>
+                            <textarea
+                                className="form-input"
+                                rows="2"
+                                placeholder="Type your reply..."
+                                value={replyMessage}
+                                onChange={(e) => setReplyMessage(e.target.value)}
+                                disabled={selectedTicket.status === 'resolved'}
+                                style={{ marginBottom: '8px', resize: 'none' }}
+                            ></textarea>
+                            <div className="flex justify-end" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={handleSendReply}
+                                    disabled={!replyMessage.trim() || selectedTicket.status === 'resolved'}
+                                    style={{ padding: '6px 16px' }}
+                                >
+                                    Send Reply
+                                </button>
+                            </div>
+                            {selectedTicket.status === 'resolved' && (
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '4px', textAlign: 'center' }}>
+                                    This ticket is resolved.
+                                </p>
+                            )}
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </Layout>
     );
 };
