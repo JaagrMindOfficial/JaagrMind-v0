@@ -1,7 +1,6 @@
 /* Landing Page Styles */
 .landing-page {
     min-height: 100vh;
-    background: var(--primary-bg);
     color: var(--text-dark);
 }
 
@@ -267,7 +266,6 @@
 }
 
 .feature-card {
-    background: var(--primary-bg);
     border-radius: 20px;
     padding: 32px;
     text-align: center;

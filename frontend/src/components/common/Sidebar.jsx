@@ -48,13 +48,7 @@ const Sidebar = () => {
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <motion.div
-                    className="sidebar-logo"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                >
-                    <img src={logoImg} alt="JaagrMind" className="sidebar-logo-img" />
-                </motion.div>
+                {/* Logo moved to Header */}
             </div>
 
             <nav className="sidebar-nav">
@@ -68,14 +62,10 @@ const Sidebar = () => {
                                 }
                                 end={item.exact}
                             >
-                                <motion.div
-                                    className="sidebar-link-content"
-                                    whileHover={{ x: 4 }}
-                                    transition={{ duration: 0.2 }}
-                                >
+                                <div className="sidebar-link-content">
                                     <FontAwesomeIcon icon={item.icon} className="sidebar-icon" />
                                     <span className="sidebar-label">{item.label}</span>
-                                </motion.div>
+                                </div>
                             </NavLink>
                         </li>
                     ))}

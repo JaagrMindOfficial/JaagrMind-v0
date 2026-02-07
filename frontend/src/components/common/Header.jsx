@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMoon, faSun, faGear, faRightFromBracket, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import lightThemeLogo from '../../assets/DarkColorLogo.svg';
+import darkThemeLogo from '../../assets/LightColorLogo.svg';
 import './Header.css';
 
 const Header = ({ title, subtitle }) => {
@@ -21,6 +23,11 @@ const Header = ({ title, subtitle }) => {
     return (
         <header className="header">
             <div className="header-left">
+                <img
+                    src={theme === 'dark' ? darkThemeLogo : lightThemeLogo}
+                    alt="JaagrMind"
+                    className="header-logo"
+                />
                 <div className="header-title-section">
                     <h1 className="header-title">{title}</h1>
                     {subtitle && <p className="header-subtitle">{subtitle}</p>}

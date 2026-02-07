@@ -17,6 +17,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import lightThemeLogo from '../assets/DarkColorLogo.svg';
 import darkThemeLogo from '../assets/LightColorLogo.svg';
+import Background3D from '../components/common/Background3D';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -76,11 +77,7 @@ const LandingPage = () => {
 
             {/* Hero Section */}
             <section className="hero-section">
-                <div className="hero-bg-shapes">
-                    <div className="shape shape-1"></div>
-                    <div className="shape shape-2"></div>
-                    <div className="shape shape-3"></div>
-                </div>
+                <Background3D />
                 <motion.div
                     className="hero-content"
                     initial={{ opacity: 0, y: 30 }}
@@ -112,16 +109,22 @@ const LandingPage = () => {
 
                 {/* Stats */}
                 <motion.div
-                    className="hero-stats"
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.8 }}
+                    className="hero-stats glass-panel"
+                    initial={{ opacity: 0, y: 100 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: false }}
+                    transition={{ duration: 0.8 }}
                 >
                     {stats.map((stat, index) => (
-                        <div key={index} className="stat-item">
+                        <motion.div
+                            key={index}
+                            className="stat-item"
+                            whileHover={{ scale: 1.1, translateY: -5 }}
+                            onHoverStart={() => navigator.vibrate && navigator.vibrate(30)}
+                        >
                             <span className="stat-value">{stat.value}</span>
                             <span className="stat-label">{stat.label}</span>
-                        </div>
+                        </motion.div>
                     ))}
                 </motion.div>
             </section>
@@ -131,9 +134,10 @@ const LandingPage = () => {
                 <div className="section-container">
                     <motion.div
                         className="section-header"
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        viewport={{ once: false, margin: "-100px" }}
+                        transition={{ duration: 0.6 }}
                     >
                         <span className="section-badge">Features</span>
                         <h2>Why Choose <span className="gradient-text">JaagrMind</span>?</h2>
@@ -144,11 +148,19 @@ const LandingPage = () => {
                         {features.map((feature, index) => (
                             <motion.div
                                 key={index}
-                                className="feature-card"
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: index * 0.1 }}
+                                className="feature-card glass-panel"
+                                initial={{ opacity: 0, scale: 0.9, y: 50 }}
+                                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                                viewport={{ once: false, margin: "-50px" }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                whileHover={{
+                                    scale: 1.05,
+                                    rotate: [0, -2, 2, -2, 0],
+                                    transition: { duration: 0.3 }
+                                }}
+                                onHoverStart={() => {
+                                    if (navigator.vibrate) navigator.vibrate(50);
+                                }}
                             >
                                 <div className="feature-icon">
                                     <FontAwesomeIcon icon={feature.icon} />
@@ -167,9 +179,10 @@ const LandingPage = () => {
                     <div className="about-content">
                         <motion.div
                             className="about-text"
-                            initial={{ opacity: 0, x: -30 }}
+                            initial={{ opacity: 0, x: -100 }}
                             whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
+                            viewport={{ once: false, margin: "-100px" }}
+                            transition={{ duration: 0.8 }}
                         >
                             <span className="section-badge">Our Mission</span>
                             <h2>Building a <span className="gradient-text">Healthier Future</span></h2>
@@ -183,25 +196,39 @@ const LandingPage = () => {
                                 world where mental health is prioritized alongside academic success.
                             </p>
                             <div className="about-values">
-                                <div className="value-item">
+                                <motion.div
+                                    className="value-item"
+                                    whileHover={{ scale: 1.1, x: 10 }}
+                                    onHoverStart={() => navigator.vibrate && navigator.vibrate(20)}
+                                >
                                     <FontAwesomeIcon icon={faHeart} className="value-icon" />
                                     <span>Compassion First</span>
-                                </div>
-                                <div className="value-item">
+                                </motion.div>
+                                <motion.div
+                                    className="value-item"
+                                    whileHover={{ scale: 1.1, x: 10 }}
+                                    onHoverStart={() => navigator.vibrate && navigator.vibrate(20)}
+                                >
                                     <FontAwesomeIcon icon={faUsers} className="value-icon" />
                                     <span>Student-Centered</span>
-                                </div>
-                                <div className="value-item">
+                                </motion.div>
+                                <motion.div
+                                    className="value-item"
+                                    whileHover={{ scale: 1.1, x: 10 }}
+                                    onHoverStart={() => navigator.vibrate && navigator.vibrate(20)}
+                                >
                                     <FontAwesomeIcon icon={faShieldAlt} className="value-icon" />
                                     <span>Privacy Protected</span>
-                                </div>
+                                </motion.div>
                             </div>
                         </motion.div>
                         <motion.div
                             className="about-visual"
-                            initial={{ opacity: 0, x: 30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
+                            initial={{ opacity: 0, x: 100, rotate: 10 }}
+                            whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+                            viewport={{ once: false, margin: "-100px" }}
+                            transition={{ duration: 0.8 }}
+                            whileHover={{ scale: 1.05, rotate: -2 }}
                         >
                             <div className="visual-card">
                                 <div className="visual-icon">🧠</div>
@@ -264,7 +291,7 @@ const LandingPage = () => {
                         </motion.div>
 
                         <motion.form
-                            className="contact-form"
+                            className="contact-form glass-panel"
                             initial={{ opacity: 0, x: 30 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}

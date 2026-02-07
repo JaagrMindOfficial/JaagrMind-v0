@@ -16,6 +16,7 @@ import {
 import Layout from '../../components/common/Layout';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import Background3D from '../../components/common/Background3D';
 import './SchoolDashboard.css';
 
 const COLORS = ['#10B981', '#F59E0B', '#EF4444'];
@@ -60,6 +61,7 @@ const SchoolDashboard = () => {
             title={`Welcome, ${data?.school?.name || 'School'}`}
             subtitle="School Dashboard Overview"
         >
+            <Background3D />
             {/* School Branding */}
             <motion.div
                 className="school-branding"

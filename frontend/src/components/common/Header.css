@@ -1,7 +1,8 @@
 .header {
     position: fixed;
     top: 0;
-    left: var(--sidebar-width);
+    left: 0;
+    /* Full width header */
     right: 0;
     height: var(--header-height);
     background: var(--primary-white);
@@ -10,14 +11,23 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 32px;
-    z-index: 100;
+    z-index: 205;
+    /* Ensure header stays above expanded sidebar */
     backdrop-filter: blur(10px);
 }
 
 .header-left {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 16px;
+    /* Reduced gap slightly */
+}
+
+.header-logo {
+    height: 32px;
+    /* Reduced to avoid clipping */
+    width: auto;
+    object-fit: contain;
 }
 
 .header-title {

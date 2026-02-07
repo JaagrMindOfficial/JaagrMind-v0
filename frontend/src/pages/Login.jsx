@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import Background3D from '../components/common/Background3D';
 import lightThemeLogo from '../assets/DarkColorLogo.svg';
 import darkThemeLogo from '../assets/LightColorLogo.svg';
 import './Login.css';
@@ -75,11 +76,20 @@ const Login = () => {
 
     return (
         <div className="login-container">
+            <Background3D />
             <motion.div
-                className="login-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+                className="login-card glass-panel"
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6 }}
+                whileHover={{
+                    scale: 1.02,
+                    rotate: [0, -1, 1, -1, 0],
+                    transition: { duration: 0.3 }
+                }}
+                onHoverStart={() => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }}
             >
                 <button
                     className="login-theme-toggle"

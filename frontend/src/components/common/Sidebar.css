@@ -9,24 +9,70 @@
     display: flex;
     flex-direction: column;
     z-index: 200;
+    overflow-x: hidden;
+    /* Hide overflow content when collapsed */
     overflow-y: auto;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Smooth expansion */
+    box-shadow: var(--shadow-sm);
+}
+
+/* Expand on Hover */
+.sidebar:hover {
+    width: var(--sidebar-expanded-width);
+    box-shadow: var(--shadow-xl);
+    /* Add shadow when expanded */
 }
 
 .sidebar-header {
-    padding: 24px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.sidebar-logo {
+    height: var(--header-height);
+    /* Match header height */
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+    /* Prevent line breaks during transition */
+}
+
+/* Logo Masking - Show only icon in collapsed state */
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    /* Align left for cropping */
+    min-height: 40px;
+    width: 32px;
+    /* Constrain to icon width */
+    overflow: hidden;
+    /* Crop the text */
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 0 auto;
+    /* Center the icon-box within header */
+}
+
+/* Expand Logo Container on Hover */
+.sidebar:hover .sidebar-logo {
+    width: 160px;
+    /* Expand to show full logo */
+    justify-content: center;
+    /* Center full logo */
 }
 
 .sidebar-logo-img {
-    height: 40px;
+    height: 32px;
     width: auto;
-    object-fit: contain;
+    /* Allow full width based on aspect ratio */
+    max-width: none;
+    /* Prevent shrinking */
+    object-position: left center;
+    transition: height var(--transition-normal);
+}
+
+.sidebar:hover .sidebar-logo-img {
+    height: 40px;
+    /* Slight scale up on expand */
 }
 
 .sidebar-nav {
@@ -46,26 +92,47 @@
     text-decoration: none;
     border-radius: var(--radius-md);
     transition: all var(--transition-fast);
+    white-space: nowrap;
+    /* Prevent text wrapping */
+    overflow: hidden;
 }
 
 .sidebar-link-content {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
+    gap: 16px;
+    padding: 14px 12px;
+    /* Compact padding */
+    min-height: 52px;
 }
 
 .sidebar-icon {
     font-size: 1.2rem;
     width: 24px;
+    min-width: 24px;
+    /* Ensure icon stays fixed size */
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar-label {
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-muted);
-    transition: color var(--transition-fast);
+    transition: color var(--transition-fast), opacity 0.2s ease;
+    opacity: 0;
+    /* Hidden by default */
+    transform: translateX(-10px);
+}
+
+/* Show Labels on Hover */
+.sidebar:hover .sidebar-label {
+    opacity: 1;
+    transform: translateX(0);
+    transition-delay: 0.1s;
+    /* Slight delay for cleaner effect */
 }
 
 .sidebar-link:hover {
@@ -95,24 +162,40 @@
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .sidebar-school-logo img {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     border-radius: var(--radius-md);
+    transition: all var(--transition-normal);
+}
+
+.sidebar:hover .sidebar-school-logo img {
+    width: 60px;
+    height: 60px;
 }
 
 .sidebar-school-name {
     font-size: 0.85rem;
     color: var(--text-muted);
     text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar:hover .sidebar-school-name {
+    opacity: 1;
+    transition-delay: 0.1s;
 }
 
 .sidebar-footer {
     padding: 16px;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
 .sidebar-logout-btn {
@@ -120,8 +203,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 14px;
+    /* Center icon when collapsed */
+    gap: 12px;
+    padding: 12px;
     background: var(--primary-bg);
     border: none;
     border-radius: var(--radius-md);
@@ -130,6 +214,24 @@
     color: var(--danger);
     cursor: pointer;
     transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.sidebar:hover .sidebar-logout-btn {
+    justify-content: flex-start;
+    /* Align left when expanded */
+    padding: 14px;
+}
+
+.sidebar-logout-btn span {
+    opacity: 0;
+    display: none;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar:hover .sidebar-logout-btn span {
+    opacity: 1;
+    display: inline;
 }
 
 .sidebar-logout-btn:hover {

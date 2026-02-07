@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSchool, faUserGraduate, faClipboardList, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
+import Background3D from '../../components/common/Background3D';
 import api from '../../services/api';
 import './AdminDashboard.css';
 
@@ -31,6 +32,7 @@ const AdminDashboard = () => {
     if (loading) {
         return (
             <Layout title="Dashboard">
+                <Background3D />
                 <div className="loading-container">
                     <div className="spinner"></div>
                     <p className="loading-text">Loading dashboard...</p>
@@ -60,13 +62,16 @@ const AdminDashboard = () => {
 
     return (
         <Layout title="Admin Dashboard" subtitle="Overview of all schools and assessments">
+            <Background3D />
             {/* Stats Cards */}
             <div className="stats-grid">
                 <motion.div
-                    className="stat-card"
+                    className="stat-card glass-panel"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
+                    whileHover={{ scale: 1.05, translateY: -5 }}
+                    onHoverStart={() => navigator.vibrate && navigator.vibrate(30)}
                 >
                     <div className="stat-icon"><FontAwesomeIcon icon={faSchool} /></div>
                     <div className="stat-value">{data?.overview?.totalSchools || 0}</div>
@@ -74,10 +79,12 @@ const AdminDashboard = () => {
                 </motion.div>
 
                 <motion.div
-                    className="stat-card"
+                    className="stat-card glass-panel"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
+                    whileHover={{ scale: 1.05, translateY: -5 }}
+                    onHoverStart={() => navigator.vibrate && navigator.vibrate(30)}
                 >
                     <div className="stat-icon"><FontAwesomeIcon icon={faUserGraduate} /></div>
                     <div className="stat-value">{data?.overview?.totalStudents || 0}</div>
@@ -85,10 +92,12 @@ const AdminDashboard = () => {
                 </motion.div>
 
                 <motion.div
-                    className="stat-card"
+                    className="stat-card glass-panel"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.05, translateY: -5 }}
+                    onHoverStart={() => navigator.vibrate && navigator.vibrate(30)}
                 >
                     <div className="stat-icon"><FontAwesomeIcon icon={faClipboardList} /></div>
                     <div className="stat-value">{data?.overview?.totalAssessments || 0}</div>
@@ -96,10 +105,12 @@ const AdminDashboard = () => {
                 </motion.div>
 
                 <motion.div
-                    className="stat-card"
+                    className="stat-card glass-panel"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
+                    whileHover={{ scale: 1.05, translateY: -5 }}
+                    onHoverStart={() => navigator.vibrate && navigator.vibrate(30)}
                 >
                     <div className="stat-icon"><FontAwesomeIcon icon={faCheckCircle} /></div>
                     <div className="stat-value">{data?.overview?.totalSubmissions || 0}</div>
@@ -111,7 +122,7 @@ const AdminDashboard = () => {
             <div className="charts-grid">
                 {/* Bucket Distribution Pie Chart */}
                 <motion.div
-                    className="chart-card"
+                    className="chart-card glass-panel"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
@@ -155,7 +166,7 @@ const AdminDashboard = () => {
 
                 {/* Section Averages Bar Chart */}
                 <motion.div
-                    className="chart-card"
+                    className="chart-card glass-panel"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
@@ -163,12 +174,56 @@ const AdminDashboard = () => {
                     <h3 className="chart-title">Average Section Scores</h3>
                     {sectionData.length > 0 && sectionData.some(s => s.score > 0) ? (
                         <ResponsiveContainer width="100%" height={280}>
-                            <BarChart data={sectionData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                <YAxis domain={[0, 32]} />
-                                <Tooltip />
-                                <Bar dataKey="score" radius={[8, 8, 0, 0]}>
+                            <BarChart data={sectionData} barSize={40}>
+                                <defs>
+                                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#B993E9" stopOpacity={0.8} />
+                                        <stop offset="50%" stopColor="#9B6DD4" stopOpacity={1} />
+                                        <stop offset="100%" stopColor="#B993E9" stopOpacity={0.8} />
+                                    </linearGradient>
+                                    <filter id="barShadow" height="130%">
+                                        <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+                                        <feOffset dx="2" dy="2" result="offsetblur" />
+                                        <feComponentTransfer>
+                                            <feFuncA type="linear" slope="0.3" />
+                                        </feComponentTransfer>
+                                        <feMerge>
+                                            <feMergeNode />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                                <XAxis
+                                    dataKey="name"
+                                    tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    domain={[0, 32]}
+                                    tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                        backdropFilter: 'blur(10px)',
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                    }}
+                                />
+                                <Bar
+                                    dataKey="score"
+                                    radius={[10, 10, 0, 0]}
+                                    fill="url(#barGradient)"
+                                    filter="url(#barShadow)"
+                                    animationDuration={1500}
+                                    animationBegin={200}
+                                >
                                     {sectionData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.fill} />
                                     ))}
@@ -185,7 +240,7 @@ const AdminDashboard = () => {
 
             {/* Recent Schools */}
             <motion.div
-                className="card"
+                className="card glass-panel"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
