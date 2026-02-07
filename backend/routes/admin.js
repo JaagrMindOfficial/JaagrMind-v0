@@ -586,26 +586,33 @@ router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, 
 });
 
 // @route   DELETE /api/admin/schools/:id
-// @desc    Archive and soft delete school (archives all school data, students, submissions)
+// @desc    Archive and hard delete school (archives all school data, students, submissions)
 // @access  Admin
 router.delete('/schools/:id', protect, isAdmin, async (req, res) => {
+    let session = null;
     try {
-        const school = await School.findById(req.params.id);
+        const mongoose = require('mongoose');
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        const school = await School.findById(req.params.id).session(session);
         if (!school) {
+            await session.abortTransaction();
+            session.endSession();
             return res.status(404).json({ message: 'School not found' });
         }
 
         // Get all students of this school
-        const students = await Student.find({ schoolId: school._id });
-        const studentIds = students.map(s => s._id);
+        const students = await Student.find({ schoolId: school._id }).session(session);
 
         // Get all submissions for this school
         const submissions = await Submission.find({ schoolId: school._id })
             .populate('assessmentId', 'title')
-            .populate('studentId', 'name');
+            .populate('studentId', 'name')
+            .session(session);
 
         // Create archive document with all school data
-        await ArchivedData.create({
+        await ArchivedData.create([{
             type: 'school',
             archivedBy: 'admin',
             reason: 'manual_deletion',
@@ -632,9 +639,9 @@ router.delete('/schools/:id', protect, isAdmin, async (req, res) => {
             })),
             schoolSubmissions: submissions.map(sub => ({
                 studentId: sub.studentId?._id,
-                studentName: sub.studentId?.name,
+                studentName: sub.studentId?.name || (sub.studentId ? 'Unknown' : 'Deleted Student'),
                 assessmentId: sub.assessmentId?._id,
-                assessmentTitle: sub.assessmentId?.title,
+                assessmentTitle: sub.assessmentId?.title || 'Unknown Assessment',
                 totalScore: sub.totalScore,
                 sectionScores: sub.sectionScores,
                 assignedBucket: sub.assignedBucket,
@@ -645,15 +652,30 @@ router.delete('/schools/:id', protect, isAdmin, async (req, res) => {
                 studentCount: students.length,
                 submissionCount: submissions.length
             }
-        });
+        }], { session });
 
-        // Soft delete school and students
-        school.isActive = false;
-        await school.save();
-        await Student.updateMany({ schoolId: school._id }, { isActive: false });
+        // Hard Data Clean up 
+        // 1. Delete all students
+        await Student.deleteMany({ schoolId: school._id }).session(session);
+
+        // 2. Delete all submissions
+        await Submission.deleteMany({ schoolId: school._id }).session(session);
+
+        // 3. Delete school credentials (auth) - CRITICAL for re-creation
+        await SchoolCredentials.deleteMany({ schoolId: school._id }).session(session);
+
+        // 4. Delete tickets
+        const Ticket = require('../models/Ticket');
+        await Ticket.deleteMany({ school: school._id }).session(session);
+
+        // 5. Delete the school itself
+        await School.findByIdAndDelete(req.params.id).session(session);
+
+        await session.commitTransaction();
+        session.endSession();
 
         res.json({
-            message: 'School archived and deleted successfully',
+            message: 'School archived and permanently deleted successfully',
             archived: {
                 students: students.length,
                 submissions: submissions.length
@@ -661,7 +683,11 @@ router.delete('/schools/:id', protect, isAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Delete school error:', error);
-        res.status(500).json({ message: 'Server error' });
+        if (session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+        res.status(500).json({ message: 'Server error: ' + error.message });
     }
 });
 

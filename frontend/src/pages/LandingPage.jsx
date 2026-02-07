@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBrain,
@@ -23,6 +25,37 @@ import './LandingPage.css';
 const LandingPage = () => {
     const { theme, toggleTheme } = useTheme();
     const logoImg = theme === 'dark' ? darkThemeLogo : lightThemeLogo;
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await axios.post(`${API_URL}/tickets/public`, formData);
+            setSubmitStatus('success');
+            setFormData({ name: '', email: '', subject: '', message: '' });
+            setTimeout(() => setSubmitStatus(null), 5000);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setSubmitStatus('error');
+            setTimeout(() => setSubmitStatus(null), 5000);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const features = [
         {
@@ -267,7 +300,7 @@ const LandingPage = () => {
                                 </div>
                                 <div>
                                     <h4>Email</h4>
-                                    <p>contact@jaagrmind.com</p>
+                                    <p>support@jaagrmind.com</p>
                                 </div>
                             </div>
                             <div className="contact-item">
@@ -276,7 +309,7 @@ const LandingPage = () => {
                                 </div>
                                 <div>
                                     <h4>Phone</h4>
-                                    <p>+91 98765 43210</p>
+                                    <p>+91 80058 73864</p>
                                 </div>
                             </div>
                             <div className="contact-item">
@@ -295,22 +328,66 @@ const LandingPage = () => {
                             initial={{ opacity: 0, x: 30 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
-                            onSubmit={(e) => e.preventDefault()}
+                            onSubmit={handleSubmit}
                         >
+                            {submitStatus === 'success' && (
+                                <div className="alert alert-success mb-4" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
+                                    Message sent successfully! We'll get back to you soon.
+                                </div>
+                            )}
+                            {submitStatus === 'error' && (
+                                <div className="alert alert-error mb-4" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
+                                    Failed to send message. Please try again later.
+                                </div>
+                            )}
                             <div className="form-group">
-                                <input type="text" className="form-input" placeholder="Your Name" required />
+                                <input
+                                    type="text"
+                                    name="name"
+                                    className="form-input"
+                                    placeholder="Your Name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                />
                             </div>
                             <div className="form-group">
-                                <input type="email" className="form-input" placeholder="Your Email" required />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    className="form-input"
+                                    placeholder="Your Email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                />
                             </div>
                             <div className="form-group">
-                                <input type="text" className="form-input" placeholder="School Name" />
+                                <input
+                                    type="text"
+                                    name="subject"
+                                    className="form-input"
+                                    placeholder="Subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
+                                    required
+                                />
                             </div>
                             <div className="form-group">
-                                <textarea className="form-input" placeholder="Your Message" rows="4" required></textarea>
+                                <textarea
+                                    name="message"
+                                    className="form-input"
+                                    placeholder="Your Message"
+                                    rows="4"
+                                    value={formData.message}
+                                    onChange={handleChange}
+                                    required
+                                ></textarea>
                             </div>
-                            <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                                Send Message <FontAwesomeIcon icon={faArrowRight} />
+                            <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={isSubmitting}>
+                                {isSubmitting ? 'Sending...' : (
+                                    <>Send Message <FontAwesomeIcon icon={faArrowRight} /></>
+                                )}
                             </button>
                         </motion.form>
                     </div>

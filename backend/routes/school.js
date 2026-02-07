@@ -392,25 +392,33 @@ router.put('/students/:id', protect, isSchoolAdmin, async (req, res) => {
 });
 
 // @route   DELETE /api/school/students/:id
-// @desc    Delete student (archive first, then hard delete)
+// @desc    Archive and Hard delete student
 // @access  School Admin
 router.delete('/students/:id', protect, isSchoolAdmin, async (req, res) => {
+    let session = null;
     try {
+        const mongoose = require('mongoose');
+        session = await mongoose.startSession();
+        session.startTransaction();
+
         const student = await Student.findOne({
             _id: req.params.id,
             schoolId: req.school._id
-        });
+        }).session(session);
 
         if (!student) {
+            await session.abortTransaction();
+            session.endSession();
             return res.status(404).json({ message: 'Student not found' });
         }
 
         // Get student's submissions for archival
         const submissions = await Submission.find({ studentId: student._id })
-            .populate('assessmentId', 'title');
+            .populate('assessmentId', 'title')
+            .session(session);
 
         // Archive student data before deletion
-        await ArchivedData.create({
+        await ArchivedData.create([{
             type: 'student',
             archivedBy: 'school',
             reason: 'manual_deletion',
@@ -428,7 +436,7 @@ router.delete('/students/:id', protect, isSchoolAdmin, async (req, res) => {
             },
             studentSubmissions: submissions.map(sub => ({
                 assessmentId: sub.assessmentId?._id,
-                assessmentTitle: sub.assessmentId?.title,
+                assessmentTitle: sub.assessmentId?.title || 'Unknown Assessment',
                 totalScore: sub.totalScore,
                 sectionScores: sub.sectionScores,
                 assignedBucket: sub.assignedBucket,
@@ -438,17 +446,24 @@ router.delete('/students/:id', protect, isSchoolAdmin, async (req, res) => {
             stats: {
                 submissionCount: submissions.length
             }
-        });
+        }], { session });
 
         // Delete associated submissions
-        await Submission.deleteMany({ studentId: student._id });
+        await Submission.deleteMany({ studentId: student._id }).session(session);
 
         // Hard delete the student
-        await Student.findByIdAndDelete(req.params.id);
+        await Student.findByIdAndDelete(req.params.id).session(session);
 
-        res.json({ message: 'Student archived and deleted successfully' });
+        await session.commitTransaction();
+        session.endSession();
+
+        res.json({ message: 'Student archived and permanently deleted successfully' });
     } catch (error) {
         console.error('Delete student error:', error);
+        if (session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });

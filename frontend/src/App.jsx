@@ -9,11 +9,13 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SchoolManagement from './pages/admin/SchoolManagement';
 import AssessmentManagement from './pages/admin/AssessmentManagement';
 import AdminAnalytics from './pages/admin/Analytics';
+import AdminTickets from './pages/admin/AdminTickets';
 import AdminManagement from './pages/admin/AdminManagement';
 import SchoolDashboard from './pages/school/SchoolDashboard';
 import StudentManagement from './pages/school/StudentManagement';
 import SchoolTests from './pages/school/SchoolTests';
 import SchoolAnalytics from './pages/school/SchoolAnalytics';
+import SchoolSupport from './pages/school/SchoolSupport';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentAssessment from './pages/student/StudentAssessment';
 import ThankYou from './pages/student/ThankYou';
@@ -94,6 +96,11 @@ function App() {
                     <AdminAnalytics />
                 </ProtectedRoute>
             } />
+            <Route path="/admin/tickets" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminTickets />
+                </ProtectedRoute>
+            } />
             <Route path="/admin/admins" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                     <AdminManagement />
@@ -119,6 +126,11 @@ function App() {
             <Route path="/school/analytics" element={
                 <ProtectedRoute allowedRoles={['school']}>
                     <SchoolAnalytics />
+                </ProtectedRoute>
+            } />
+            <Route path="/school/support" element={
+                <ProtectedRoute allowedRoles={['school']}>
+                    <SchoolSupport />
                 </ProtectedRoute>
             } />
 

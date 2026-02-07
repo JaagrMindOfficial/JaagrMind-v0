@@ -8,7 +8,7 @@
     border-right: 1px solid rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
-    z-index: 200;
+    z-index: 300;
     overflow-x: hidden;
     /* Hide overflow content when collapsed */
     overflow-y: auto;
@@ -36,43 +36,60 @@
     /* Prevent line breaks during transition */
 }
 
-/* Logo Masking - Show only icon in collapsed state */
-.sidebar-logo {
+/* Logo Container */
+.sidebar-logo-container {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    /* Align left for cropping */
-    min-height: 40px;
-    width: 32px;
-    /* Constrain to icon width */
-    overflow: hidden;
-    /* Crop the text */
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin: 0 auto;
-    /* Center the icon-box within header */
-}
-
-/* Expand Logo Container on Hover */
-.sidebar:hover .sidebar-logo {
-    width: 160px;
-    /* Expand to show full logo */
     justify-content: center;
-    /* Center full logo */
+    height: 100%;
+    width: 100%;
+    position: relative;
+    padding: 0 12px;
 }
 
 .sidebar-logo-img {
     height: 32px;
     width: auto;
-    /* Allow full width based on aspect ratio */
-    max-width: none;
-    /* Prevent shrinking */
-    object-position: left center;
-    transition: height var(--transition-normal);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.sidebar:hover .sidebar-logo-img {
+/* Collapsed Logo (Default) */
+.sidebar-logo-img.collapsed {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Expanded Logo (Hidden by default) */
+.sidebar-logo-img.expanded {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -50%) scale(0.8);
     height: 40px;
-    /* Slight scale up on expand */
+    /* Slightly larger for full logo */
+}
+
+/* Switch on Hover */
+.sidebar:hover .sidebar-logo-container {
+    justify-content: flex-start;
+    /* Align left when expanded if needed, or keep centered */
+    padding: 0 24px;
+}
+
+.sidebar:hover .sidebar-logo-img.collapsed {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -50%) scale(0.8);
+}
+
+.sidebar:hover .sidebar-logo-img.expanded {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
 }
 
 .sidebar-nav {

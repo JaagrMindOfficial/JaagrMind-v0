@@ -9,19 +9,23 @@ import {
     faUserGraduate,
     faFileLines,
     faRightFromBracket,
-    faUserShield
+    faUserShield,
+    faHeadset
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import lightThemeLogo from '../../assets/DarkColorLogo.svg';
 import darkThemeLogo from '../../assets/LightColorLogo.svg';
+import collapsedLightLogo from '../../assets/JM-Dark.svg';
+import collapsedDarkLogo from '../../assets/JM-White.svg';
 import './Sidebar.css';
 
 const adminMenuItems = [
     { path: '/admin', icon: faHouse, label: 'Dashboard', exact: true },
     { path: '/admin/schools', icon: faSchool, label: 'Schools' },
     { path: '/admin/assessments', icon: faClipboardList, label: 'Assessments' },
-    { path: '/admin/analytics', icon: faChartLine, label: 'Analytics' },
+    { path: '/admin/reports', icon: faChartLine, label: 'Reports' },
+    { path: '/admin/tickets', icon: faHeadset, label: 'Support Tickets' },
     { path: '/admin/admins', icon: faUserShield, label: 'Admin Management' },
 ];
 
@@ -30,6 +34,7 @@ const schoolMenuItems = [
     { path: '/school/students', icon: faUserGraduate, label: 'Students' },
     { path: '/school/tests', icon: faFileLines, label: 'Tests' },
     { path: '/school/analytics', icon: faChartLine, label: 'Analytics' },
+    { path: '/school/support', icon: faHeadset, label: 'Support' },
 ];
 
 const Sidebar = () => {
@@ -38,7 +43,12 @@ const Sidebar = () => {
     const navigate = useNavigate();
 
     const menuItems = isAdmin ? adminMenuItems : isSchool ? schoolMenuItems : [];
-    const logoImg = theme === 'dark' ? darkThemeLogo : lightThemeLogo;
+
+    // Logos for Expanded State (Full Logo)
+    const expandedLogo = theme === 'dark' ? darkThemeLogo : lightThemeLogo;
+
+    // Logos for Collapsed State (Icon Only)
+    const collapsedLogo = theme === 'dark' ? collapsedDarkLogo : collapsedLightLogo;
 
     const handleLogout = () => {
         logout();
@@ -48,7 +58,18 @@ const Sidebar = () => {
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                {/* Logo moved to Header */}
+                <div className="sidebar-logo-container">
+                    <img
+                        src={collapsedLogo}
+                        alt="JaagrMind"
+                        className="sidebar-logo-img collapsed"
+                    />
+                    <img
+                        src={expandedLogo}
+                        alt="JaagrMind"
+                        className="sidebar-logo-img expanded"
+                    />
+                </div>
             </div>
 
             <nav className="sidebar-nav">

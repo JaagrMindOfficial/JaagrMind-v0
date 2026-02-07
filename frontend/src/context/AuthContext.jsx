@@ -5,6 +5,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [token, setToken] = useState(localStorage.getItem('jaagrmind_token'));
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -12,9 +13,22 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem('jaagrmind_user');
         const storedToken = localStorage.getItem('jaagrmind_token');
 
-        if (storedUser && storedToken) {
-            setUser(JSON.parse(storedUser));
-            api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        if (storedUser && storedToken && storedToken !== 'undefined' && storedToken !== 'null') {
+            try {
+                setUser(JSON.parse(storedUser));
+                setToken(storedToken);
+                api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            } catch (e) {
+                console.error('Error parsing stored user:', e);
+                localStorage.removeItem('jaagrmind_user');
+                localStorage.removeItem('jaagrmind_token');
+            }
+        } else {
+            // Clean up potential bad state
+            localStorage.removeItem('jaagrmind_token');
+            if (storedToken === 'undefined' || storedToken === 'null') {
+                localStorage.removeItem('jaagrmind_user');
+            }
         }
         setLoading(false);
     }, []);
@@ -34,13 +48,14 @@ export const AuthProvider = ({ children }) => {
                 response = await api.post('/api/student/login', credentials);
             }
 
-            const { token, ...userData } = response.data;
+            const { token: newToken, ...userData } = response.data;
 
-            localStorage.setItem('jaagrmind_token', token);
+            localStorage.setItem('jaagrmind_token', newToken);
             localStorage.setItem('jaagrmind_user', JSON.stringify(userData));
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
             setUser(userData);
+            setToken(newToken);
             return { success: true, user: userData };
         } catch (error) {
             return {
@@ -55,6 +70,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('jaagrmind_user');
         delete api.defaults.headers.common['Authorization'];
         setUser(null);
+        setToken(null);
     };
 
     const updateUser = (updates) => {
