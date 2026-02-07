@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBullseye, faBrain, faHandshake, faMobileScreen, faCheck, faClipboardList, faHeart, faRocket } from '@fortawesome/free-solid-svg-icons';
@@ -36,8 +36,9 @@ const energyOptions = [
     { value: 'exhausted', label: 'Exhausted', icon: '😩' }
 ];
 
-const StudentAssessment = () => {
+const StudentAssessment = ({ previewMode = false }) => {
     const { user, logout } = useAuth();
+    const { assessmentId } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
 
@@ -74,8 +75,12 @@ const StudentAssessment = () => {
     const lastActivityTimeRef = useRef(Date.now());
 
     useEffect(() => {
-        fetchTests();
-    }, []);
+        if (previewMode && assessmentId) {
+            startPreview(assessmentId);
+        } else {
+            fetchTests();
+        }
+    }, [previewMode, assessmentId]);
 
     // Countdown timer effect
     useEffect(() => {
@@ -178,6 +183,11 @@ const StudentAssessment = () => {
 
     // Handle test end due to inactivity
     const handleInactivityEnd = async () => {
+        if (previewMode) {
+            toast.info('Inactivity timer ended. In preview mode, this would submit the test.');
+            navigate(-1);
+            return;
+        }
         try {
             const timeTaken = Math.round((Date.now() - startTime) / 1000);
 
@@ -276,6 +286,35 @@ const StudentAssessment = () => {
         }
     };
 
+    const startPreview = async (id) => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/api/preview/assessment/${id}`);
+            const data = response.data;
+
+            setAssessment(data);
+            setInactivitySettings({
+                alertTime: data.inactivityAlertTime || INACTIVITY_ALERT_DEFAULT,
+                endTime: data.inactivityEndTime || INACTIVITY_END_DEFAULT
+            });
+
+            setAnswers(new Array(data.questions.length).fill(null));
+            setStartTime(Date.now());
+            setQuestionStartTime(Date.now());
+            setCurrentInactivityTime(0);
+            setFlowStep('assessment');
+
+            // Show toast for preview mode
+            toast.info('Preview Mode: Responses will not be saved');
+        } catch (error) {
+            toast.error('Error loading assessment for preview');
+            console.error(error);
+            navigate(-1);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const startAssessment = async (assessmentId) => {
         try {
             setLoading(true);
@@ -349,6 +388,12 @@ const StudentAssessment = () => {
     };
 
     const handleSubmit = async () => {
+        if (previewMode) {
+            toast.success('Preview completed! Returning to dashboard.');
+            navigate(-1); // Go back to admin/school dashboard
+            return;
+        }
+
         setSubmitting(true);
         try {
             const timeTaken = Math.round((Date.now() - startTime) / 1000);
@@ -672,6 +717,37 @@ const StudentAssessment = () => {
 
     return (
         <div className="assessment-container">
+            {/* Floating Close Preview Button */}
+            {previewMode && (
+                <motion.button
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate(-1)}
+                    style={{
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        zIndex: 10000,
+                        padding: '10px 20px',
+                        background: '#ff4757',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50px',
+                        boxShadow: '0 4px 15px rgba(255, 71, 87, 0.3)',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    <span style={{ fontSize: '1.2em', lineHeight: 1 }}>×</span> Close Preview
+                </motion.button>
+            )}
+
             {/* Background Animation */}
             <ul className="circles">
                 <li></li>
@@ -872,7 +948,7 @@ const StudentAssessment = () => {
                         {submitting ? (
                             <span className="btn-spinner"></span>
                         ) : currentQuestion === assessment.questions.length - 1 ? (
-                            'Submit ✓'
+                            previewMode ? 'Close Preview' : 'Submit ✓'
                         ) : (
                             'Next →'
                         )}

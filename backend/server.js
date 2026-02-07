@@ -13,6 +13,7 @@ const adminRoutes = require('./routes/admin');
 const schoolRoutes = require('./routes/school');
 const studentRoutes = require('./routes/student');
 const ticketRoutes = require('./routes/tickets');
+const previewRoutes = require('./routes/preview');
 
 // Initialize express
 const app = express();
@@ -107,6 +108,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/school', schoolRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/preview', previewRoutes);
 
 // Health check - hide sensitive info in production
 app.get('/api/health', (req, res) => {

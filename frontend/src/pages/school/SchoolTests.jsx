@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsersGear, faRotateRight, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -8,6 +9,7 @@ import api from '../../services/api';
 import './SchoolTests.css';
 
 const SchoolTests = () => {
+    const navigate = useNavigate();
     const toast = useToast();
     const [tests, setTests] = useState([]);
     const [classes, setClasses] = useState([]);
@@ -221,6 +223,17 @@ const SchoolTests = () => {
                             whileTap={{ scale: 0.95 }}
                         >
                             {copiedLink === test._id ? '✓ Copied!' : '🔗 Copy Link'}
+                        </motion.button>
+                        <motion.button
+                            className="btn btn-sm btn-secondary"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/preview/assessment/${test._id}`);
+                            }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{ marginLeft: '0.5rem' }}
+                        >
+                            👁️ Preview
                         </motion.button>
                     </motion.div>
                 ))}

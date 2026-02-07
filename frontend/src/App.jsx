@@ -134,6 +134,13 @@ function App() {
                 </ProtectedRoute>
             } />
 
+            {/* Preview Route - Admin & School only */}
+            <Route path="/preview/assessment/:assessmentId" element={
+                <ProtectedRoute allowedRoles={['admin', 'school']}>
+                    <StudentAssessment previewMode={true} />
+                </ProtectedRoute>
+            } />
+
             {/* Landing Page - Public */}
             <Route path="/" element={
                 isAuthenticated ? (

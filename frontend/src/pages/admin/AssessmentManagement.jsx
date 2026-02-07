@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../../components/common/Layout';
 import { useToast } from '../../components/common/Toast';
@@ -19,6 +20,7 @@ const defaultSections = [
 ];
 
 const AssessmentManagement = () => {
+    const navigate = useNavigate();
     const toast = useToast();
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -340,6 +342,12 @@ const AssessmentManagement = () => {
                                 onClick={() => openQuestionsModal(assessment)}
                             >
                                 View Questions
+                            </button>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => navigate(`/preview/assessment/${assessment._id}`)}
+                            >
+                                👁️ Preview
                             </button>
                             <button
                                 className="btn btn-outline btn-sm"

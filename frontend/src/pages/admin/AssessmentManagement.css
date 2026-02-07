@@ -1,16 +1,19 @@
 .assessments-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 }
 
 .assessment-card {
     background: var(--primary-white);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .assessment-card.default {
@@ -31,37 +34,44 @@
 }
 
 .assessment-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: var(--radius-md);
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
     background: var(--gradient-purple);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    margin-bottom: 20px;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
 }
 
 .assessment-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-dark);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+    line-height: 1.3;
 }
 
 .assessment-desc {
     color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 20px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .assessment-stats {
     display: flex;
-    gap: 24px;
-    padding: 16px 0;
+    gap: 16px;
+    padding: 12px 0;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+    margin-top: auto;
 }
 
 .assessment-stat {
@@ -70,13 +80,13 @@
 }
 
 .assessment-stat-value {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--primary-purple);
 }
 
 .assessment-stat-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
 }
 
@@ -97,15 +107,15 @@
 
 .assessment-buckets {
     background: var(--primary-bg);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    margin-bottom: 16px;
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    margin-bottom: 12px;
 }
 
 .assessment-buckets h4 {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     color: var(--text-dark);
 }
 
@@ -118,8 +128,8 @@
 .bucket-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
+    gap: 6px;
+    font-size: 0.75rem;
     color: var(--text-muted);
 }
 
