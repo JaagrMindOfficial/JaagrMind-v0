@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import lightThemeLogo from '../../assets/DarkColorLogo.svg';
 import darkThemeLogo from '../../assets/LightColorLogo.svg';
+import Background3D from '../../components/common/Background3D';
 import './StudentLogin.css';
 
 const StudentLogin = () => {
@@ -16,6 +17,8 @@ const StudentLogin = () => {
     const [accessId, setAccessId] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
     const [email, setEmail] = useState('');
+    const [schoolCode, setSchoolCode] = useState('');
+    const [step, setStep] = useState('school'); // 'school' or 'login'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -28,21 +31,40 @@ const StudentLogin = () => {
     useEffect(() => {
         const schoolId = searchParams.get('school');
         if (schoolId) {
+            setStep('login');
             fetchSchoolInfo(schoolId);
         } else {
-            // No school ID means invalid access
-            setError('Invalid access. Please use the test link provided by your school.');
+            setStep('school');
+            setSchoolInfo({ name: null, logo: null });
         }
     }, [searchParams]);
 
     const fetchSchoolInfo = async (schoolId) => {
         try {
+            setLoading(true);
             const response = await api.get(`/api/student/school-info?schoolId=${schoolId}`);
             setSchoolInfo(response.data);
+            setError('');
         } catch (error) {
             console.error('Error fetching school info:', error);
-            setError('Invalid school link. Please contact your school for the correct link.');
+            setError('Invalid school link or code. Please check and try again.');
+            setStep('school'); // Go back to school entry on error
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const handleSchoolSubmit = (e) => {
+        e.preventDefault();
+        if (!schoolCode.trim()) {
+            setError('Please enter a valid School Code');
+            return;
+        }
+
+        // Preserve existing params (like 'test') and add 'school'
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('school', schoolCode.trim());
+        navigate(`/student/login?${newParams.toString()}`);
     };
 
     const handleSubmit = async (e) => {
@@ -84,11 +106,8 @@ const StudentLogin = () => {
     return (
         <div className="student-login-container">
             {/* Background Animation */}
-            <div className="student-bg-shapes">
-                <div className="shape shape-1"></div>
-                <div className="shape shape-2"></div>
-                <div className="shape shape-3"></div>
-            </div>
+            {/* Background Animation */}
+            <Background3D />
 
             <motion.div
                 className="student-login-card"
@@ -140,63 +159,121 @@ const StudentLogin = () => {
                     </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit} className="student-form">
-                    <div className="form-group">
-                        <label className="form-label">
-                            Access ID <span className="required">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            className="form-input large"
-                            placeholder="Enter your Access ID"
-                            value={accessId}
-                            onChange={(e) => setAccessId(e.target.value.toUpperCase())}
-                            required
-                        />
-                        <p className="input-hint">Your unique ID provided by your school</p>
-                    </div>
+                {step === 'school' ? (
+                    <form onSubmit={handleSchoolSubmit} className="student-form">
+                        <div className="form-group">
+                            <label className="form-label">
+                                School Code <span className="required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                className="form-input large"
+                                placeholder="Enter School Code"
+                                value={schoolCode}
+                                onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
+                                required
+                            />
+                            <p className="input-hint">Enter the unique code provided by your school</p>
+                        </div>
 
-                    <div className="optional-fields">
-                        <p className="optional-label">Optional Information</p>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <input
-                                    type="tel"
-                                    className="form-input"
-                                    placeholder="Mobile Number"
-                                    value={mobileNumber}
-                                    onChange={(e) => setMobileNumber(e.target.value)}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <input
-                                    type="email"
-                                    className="form-input"
-                                    placeholder="Email (optional)"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
+                        <motion.button
+                            type="submit"
+                            className="btn btn-primary btn-lg student-submit-btn"
+                            disabled={loading}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            {loading ? (
+                                <span className="btn-spinner"></span>
+                            ) : (
+                                <>
+                                    Next
+                                    <span className="btn-arrow">→</span>
+                                </>
+                            )}
+                        </motion.button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleSubmit} className="student-form">
+                        <div className="form-group">
+                            <label className="form-label">
+                                Access ID <span className="required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                className="form-input large"
+                                placeholder="Enter your Access ID"
+                                value={accessId}
+                                onChange={(e) => setAccessId(e.target.value.toUpperCase())}
+                                required
+                            />
+                            <p className="input-hint">Your unique ID provided by your school</p>
+                        </div>
+                        <div className="optional-fields">
+                            <p className="optional-label">Optional Information</p>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <input
+                                        type="tel"
+                                        className="form-input"
+                                        placeholder="Mobile Number"
+                                        value={mobileNumber}
+                                        onChange={(e) => setMobileNumber(e.target.value)}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <input
+                                        type="email"
+                                        className="form-input"
+                                        placeholder="Email (optional)"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <motion.button
-                        type="submit"
-                        className="btn btn-primary btn-lg student-submit-btn"
-                        disabled={loading}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        {loading ? (
-                            <span className="btn-spinner"></span>
-                        ) : (
-                            <>
-                                Start Assessment
-                                <span className="btn-arrow">→</span>
-                            </>
-                        )}
-                    </motion.button>
-                </form>
+                        <motion.button
+                            type="submit"
+                            className="btn btn-primary btn-lg student-submit-btn"
+                            disabled={loading}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            {loading ? (
+                                <span className="btn-spinner"></span>
+                            ) : (
+                                <>
+                                    Start Assessment
+                                    <span className="btn-arrow">→</span>
+                                </>
+                            )}
+                        </motion.button>
+                        <button
+                            type="button"
+                            className="btn-link"
+                            onClick={() => {
+                                setStep('school');
+                                const newParams = new URLSearchParams(searchParams);
+                                newParams.delete('school');
+                                navigate(`/student/login?${newParams.toString()}`);
+                            }}
+                            style={{
+                                display: 'block',
+                                width: '100%',
+                                textAlign: 'center',
+                                marginTop: '16px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                textDecoration: 'underline'
+                            }}
+                        >
+                            Change School
+                        </button>
+                    </form>
+                )}
 
                 <div className="student-footer">
                     <p>Are you a school or admin? <a href="/login">Login here</a></p>
