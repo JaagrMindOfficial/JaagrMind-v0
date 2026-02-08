@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBullseye, faBrain, faHandshake, faMobileScreen, faCheck, faClipboardList, faHeart, faRocket } from '@fortawesome/free-solid-svg-icons';
+import { faBullseye, faBrain, faHandshake, faMobileScreen, faCheck, faClipboardList, faHeart, faRocket, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
@@ -645,7 +645,9 @@ const StudentAssessment = ({ previewMode = false }) => {
             return (
                 <div className="assessment-container">
                     <div className="no-tests-card">
-                        <div className="no-tests-icon">📝</div>
+                        <div className="no-tests-icon">
+                            <FontAwesomeIcon icon={faClipboardList} />
+                        </div>
                         <h2>No Tests Available</h2>
                         <p>You don't have any pending assessments.</p>
                         <button className="btn btn-secondary" onClick={() => { logout(); navigate('/student/login'); }}>
@@ -682,7 +684,9 @@ const StudentAssessment = ({ previewMode = false }) => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                             >
-                                <span className="test-icon">📝</span>
+                                <span className="test-icon">
+                                    <FontAwesomeIcon icon={faClipboardList} />
+                                </span>
                                 <span className="test-title">{test.title}</span>
                                 <span className="test-meta">{test.questionCount} questions</span>
                             </motion.button>
@@ -744,7 +748,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                         fontSize: '0.9rem'
                     }}
                 >
-                    <span style={{ fontSize: '1.2em', lineHeight: 1 }}>×</span> Close Preview
+                    <FontAwesomeIcon icon={faXmark} style={{ fontSize: '1.2em' }} /> Close Preview
                 </motion.button>
             )}
 
@@ -872,9 +876,17 @@ const StudentAssessment = ({ previewMode = false }) => {
                         exit={{ opacity: 0, x: -50 }}
                         transition={{ duration: 0.3 }}
                     >
+                        <div className="floating-question-number">Q{currentQuestion + 1}</div>
                         <h3 className="question-text">
                             {assessment.questions[currentQuestion].text}
                         </h3>
+                        <div className="question-section-label">
+                            Section: {(() => {
+                                const qSection = assessment.questions[currentQuestion].section;
+                                const sDef = assessment.customSections?.find(s => s.key === qSection);
+                                return sDef ? sDef.name : qSection;
+                            })()}
+                        </div>
 
                         {showWarning && (
                             <motion.div

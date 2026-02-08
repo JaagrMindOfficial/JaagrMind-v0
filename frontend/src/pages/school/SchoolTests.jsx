@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsersGear, faRotateRight, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faUsersGear, faRotateRight, faCheck, faXmark, faEye, faLink, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
@@ -107,7 +107,7 @@ const SchoolTests = () => {
         try {
             await api.post('/api/school/tests/assign', {
                 assessmentId: selectedTest._id,
-                targetType: assignTarget.type === 'all' ? 'class' : assignTarget.type,
+                targetType: assignTarget.type,
                 targetClass: assignTarget.class || undefined,
                 targetSection: assignTarget.section || undefined
             });
@@ -209,7 +209,9 @@ const SchoolTests = () => {
                         transition={{ delay: index * 0.1 }}
                         whileHover={{ scale: 1.02 }}
                     >
-                        <div className="test-card-icon">📝</div>
+                        <div className="test-card-icon">
+                            <FontAwesomeIcon icon={faClipboardList} />
+                        </div>
                         <div className="test-card-info">
                             <h3>{test.title}</h3>
                             <p>{test.isDefault ? 'Default Assessment' : 'Custom Assessment'}</p>
@@ -222,7 +224,11 @@ const SchoolTests = () => {
                             }}
                             whileTap={{ scale: 0.95 }}
                         >
-                            {copiedLink === test._id ? '✓ Copied!' : '🔗 Copy Link'}
+                            {copiedLink === test._id ? (
+                                <span><FontAwesomeIcon icon={faCheck} /> Copied!</span>
+                            ) : (
+                                <span><FontAwesomeIcon icon={faLink} /> Copy Link</span>
+                            )}
                         </motion.button>
                         <motion.button
                             className="btn btn-sm btn-secondary"
@@ -233,7 +239,7 @@ const SchoolTests = () => {
                             whileTap={{ scale: 0.95 }}
                             style={{ marginLeft: '0.5rem' }}
                         >
-                            👁️ Preview
+                            <FontAwesomeIcon icon={faEye} /> Preview
                         </motion.button>
                     </motion.div>
                 ))}

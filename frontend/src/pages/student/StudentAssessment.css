@@ -329,24 +329,53 @@
 
 /* Question Section */
 .question-section {
-    min-height: 300px;
     display: flex;
     flex-direction: column;
+    min-height: auto;
+    position: relative;
+    padding-left: 60px;
+    /* Space for Q number */
 }
 
 .question-text {
-    font-size: 1.25rem;
-    font-weight: 500;
+    font-size: 1.4rem;
+    font-weight: 600;
     color: var(--text-dark);
-    text-align: center;
-    margin-bottom: 32px;
-    line-height: 1.6;
+    text-align: left;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.question-section-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.floating-question-number {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 44px;
+    height: 44px;
+    background: var(--gradient-purple);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 .options-grid {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-top: 12px;
 }
 
 .option-btn {

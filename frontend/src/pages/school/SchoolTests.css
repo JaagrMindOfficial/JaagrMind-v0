@@ -9,6 +9,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    flex-wrap: wrap;
     background: var(--primary-white);
     border-radius: var(--radius-lg);
     padding: 20px;

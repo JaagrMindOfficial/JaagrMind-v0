@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../../components/common/Layout';
 import { useToast } from '../../components/common/Toast';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faPencil, faTrash, faStar, faList, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import './AssessmentManagement.css';
 
@@ -284,7 +286,9 @@ const AssessmentManagement = () => {
                             <div className="default-badge">DEFAULT</div>
                         )}
 
-                        <div className="assessment-icon">📝</div>
+                        <div className="assessment-icon">
+                            <FontAwesomeIcon icon={faClipboardList} />
+                        </div>
 
                         <h3 className="assessment-title">{assessment.title}</h3>
                         <p className="assessment-desc">
@@ -341,19 +345,19 @@ const AssessmentManagement = () => {
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => openQuestionsModal(assessment)}
                             >
-                                View Questions
+                                <FontAwesomeIcon icon={faList} /> View Questions
                             </button>
                             <button
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => navigate(`/preview/assessment/${assessment._id}`)}
                             >
-                                👁️ Preview
+                                <FontAwesomeIcon icon={faEye} /> Preview
                             </button>
                             <button
                                 className="btn btn-outline btn-sm"
                                 onClick={() => openEditModal(assessment)}
                             >
-                                ✏️ Edit
+                                <FontAwesomeIcon icon={faPencil} /> Edit
                             </button>
                             {!assessment.isDefault && (
                                 <>
@@ -362,13 +366,13 @@ const AssessmentManagement = () => {
                                         onClick={() => handleSetDefault(assessment)}
                                         disabled={settingDefault === assessment._id}
                                     >
-                                        {settingDefault === assessment._id ? '...' : '⭐ Set Default'}
+                                        <FontAwesomeIcon icon={faStar} /> {settingDefault === assessment._id ? '...' : 'Set Default'}
                                     </button>
                                     <button
                                         className="btn btn-danger btn-sm"
                                         onClick={() => handleDelete(assessment)}
                                     >
-                                        🗑️ Delete
+                                        <FontAwesomeIcon icon={faTrash} /> Delete
                                     </button>
                                 </>
                             )}
@@ -378,7 +382,9 @@ const AssessmentManagement = () => {
 
                 {assessments.length === 0 && (
                     <div className="empty-state card">
-                        <div className="empty-state-icon">📝</div>
+                        <div className="empty-state-icon">
+                            <FontAwesomeIcon icon={faClipboardList} />
+                        </div>
                         <h3 className="empty-state-title">No Assessments</h3>
                         <p className="empty-state-text">Create your first assessment</p>
                         <button className="btn btn-primary" onClick={openCreateModal}>
@@ -467,7 +473,7 @@ const AssessmentManagement = () => {
                                             className="btn btn-secondary btn-sm"
                                             onClick={() => setShowSectionsModal(true)}
                                         >
-                                            ⚙️ Manage Sections
+                                            <FontAwesomeIcon icon={faList} /> Manage Sections
                                         </button>
                                     </div>
                                     <div className="sections-list">
