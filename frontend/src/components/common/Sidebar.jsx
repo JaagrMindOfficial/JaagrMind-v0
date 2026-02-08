@@ -24,7 +24,7 @@ const adminMenuItems = [
     { path: '/admin', icon: faHouse, label: 'Dashboard', exact: true },
     { path: '/admin/schools', icon: faSchool, label: 'Schools' },
     { path: '/admin/assessments', icon: faClipboardList, label: 'Assessments' },
-    { path: '/admin/reports', icon: faChartLine, label: 'Reports' },
+    { path: '/admin/analytics', icon: faChartLine, label: 'Reports' },
     { path: '/admin/tickets', icon: faHeadset, label: 'Support Tickets' },
     { path: '/admin/admins', icon: faUserShield, label: 'Admin Management' },
 ];

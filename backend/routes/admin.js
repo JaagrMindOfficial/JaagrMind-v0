@@ -789,6 +789,707 @@ router.get('/schools/:id/students-analytics', protect, isAdmin, async (req, res)
     }
 });
 
+// ============================================
+// HIERARCHICAL ANALYTICS ENDPOINTS
+// ============================================
+
+// Helper function to get bucket category from score
+const getBucketCategory = (score) => {
+    if (score >= 8 && score <= 14) return 'green';  // Stable/Thriving
+    if (score >= 15 && score <= 22) return 'yellow'; // Emerging/Growing
+    if (score >= 23 && score <= 32) return 'red';    // Support Needed
+    return 'unknown';
+};
+
+// Helper function to get overall bucket from total score
+const getOverallBucket = (totalScore) => {
+    if (totalScore >= 32 && totalScore <= 56) return 'doingWell';      // Stable
+    if (totalScore >= 57 && totalScore <= 88) return 'needsSupport';   // Emerging
+    if (totalScore >= 89 && totalScore <= 128) return 'needsAttention'; // Support Needed
+    return 'unknown';
+};
+
+// @route   GET /api/admin/analytics/overview
+// @desc    Get nationwide analytics overview for admin dashboard
+// @access  Admin
+router.get('/analytics/overview', protect, isAdmin, async (req, res) => {
+    try {
+        // Get counts
+        const [totalSchools, totalStudents, totalSubmissions] = await Promise.all([
+            School.countDocuments({ isActive: true }),
+            Student.countDocuments({ isActive: true }),
+            Submission.countDocuments({ status: 'complete' })
+        ]);
+
+        // Get all completed submissions for analytics
+        const submissions = await Submission.find({ status: 'complete' })
+            .select('schoolId totalScore sectionScores assignedBucket submittedAt')
+            .sort({ submittedAt: -1 })
+            .limit(5000);
+
+        // Calculate skill distribution
+        const skillDistribution = {
+            A: { green: 0, yellow: 0, red: 0 }, B: { green: 0, yellow: 0, red: 0 },
+            C: { green: 0, yellow: 0, red: 0 }, D: { green: 0, yellow: 0, red: 0 }
+        };
+        const overallDistribution = { doingWell: 0, needsSupport: 0, needsAttention: 0 };
+
+        submissions.forEach(sub => {
+            // Section-wise distribution
+            if (sub.sectionScores) {
+                Object.entries(sub.sectionScores).forEach(([section, score]) => {
+                    if (skillDistribution[section]) {
+                        const bucket = getBucketCategory(score);
+                        if (bucket !== 'unknown') skillDistribution[section][bucket]++;
+                    }
+                });
+            }
+            // Overall distribution
+            const overall = getOverallBucket(sub.totalScore);
+            if (overall !== 'unknown') overallDistribution[overall]++;
+        });
+
+        // Get monthly trend data (last 6 months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const monthlyTrend = await Submission.aggregate([
+            { $match: { status: 'complete', submittedAt: { $gte: sixMonthsAgo } } },
+            {
+                $group: {
+                    _id: { year: { $year: '$submittedAt' }, month: { $month: '$submittedAt' } },
+                    count: { $sum: 1 },
+                    avgScore: { $avg: '$totalScore' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+
+        // Get top schools by submissions
+        const topSchools = await Submission.aggregate([
+            { $match: { status: 'complete' } },
+            { $group: { _id: '$schoolId', count: { $sum: 1 }, avgScore: { $avg: '$totalScore' } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 },
+            { $lookup: { from: 'schools', localField: '_id', foreignField: '_id', as: 'school' } },
+            { $unwind: '$school' },
+            {
+                $project: {
+                    schoolId: '$school._id',
+                    name: '$school.name',
+                    logo: '$school.logo',
+                    submissionCount: '$count',
+                    avgScore: { $round: ['$avgScore', 1] }
+                }
+            }
+        ]);
+
+        // Get all schools for the school list
+        const schools = await School.find({ isActive: true })
+            .select('name schoolId logo address createdAt')
+            .sort({ name: 1 });
+
+        // Get student and submission counts per school
+        const schoolStats = await Promise.all(schools.map(async (school) => {
+            const [studentCount, submissionCount] = await Promise.all([
+                Student.countDocuments({ schoolId: school._id, isActive: true }),
+                Submission.countDocuments({ schoolId: school._id, status: 'complete' })
+            ]);
+            return {
+                _id: school._id,
+                name: school.name,
+                schoolId: school.schoolId,
+                logo: school.logo,
+                address: school.address,
+                studentCount,
+                submissionCount,
+                completionRate: studentCount > 0 ? Math.round((submissionCount / studentCount) * 100) : 0
+            };
+        }));
+
+        res.json({
+            totals: { totalSchools, totalStudents, totalSubmissions },
+            overallDistribution,
+            skillDistribution,
+            monthlyTrend: monthlyTrend.map(m => ({
+                month: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+                count: m.count,
+                avgScore: Math.round(m.avgScore * 10) / 10
+            })),
+            topSchools,
+            schools: schoolStats
+        });
+    } catch (error) {
+        console.error('Analytics overview error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/analytics/tests
+// @desc    Get all tests/assessments with submission statistics
+// @access  Admin
+router.get('/analytics/tests', protect, isAdmin, async (req, res) => {
+    try {
+        // Get all active assessments
+        const assessments = await Assessment.find({ isActive: true })
+            .select('title description createdAt')
+            .sort({ createdAt: -1 });
+
+        // Get submission stats for each assessment
+        const testsWithStats = await Promise.all(assessments.map(async (assessment) => {
+            const stats = await Submission.aggregate([
+                { $match: { assessmentId: assessment._id } },
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 },
+                        avgScore: { $avg: '$totalScore' }
+                    }
+                }
+            ]);
+
+            const completed = stats.find(s => s._id === 'complete') || { count: 0, avgScore: 0 };
+            const pending = stats.find(s => s._id === 'pending') || { count: 0 };
+            const incomplete = stats.find(s => s._id === 'incomplete') || { count: 0 };
+
+            // Get bucket distribution for completed submissions
+            const bucketDist = await Submission.aggregate([
+                { $match: { assessmentId: assessment._id, status: 'complete' } },
+                { $group: { _id: '$assignedBucket', count: { $sum: 1 } } }
+            ]);
+
+            const distribution = { doingWell: 0, needsSupport: 0, needsAttention: 0 };
+            bucketDist.forEach(b => {
+                if (b._id === 'Doing Well' || b._id === 'doingWell') distribution.doingWell = b.count;
+                else if (b._id === 'Needs Support' || b._id === 'needsSupport') distribution.needsSupport = b.count;
+                else if (b._id === 'Needs Attention' || b._id === 'needsAttention') distribution.needsAttention = b.count;
+            });
+
+            return {
+                _id: assessment._id,
+                title: assessment.title,
+                description: assessment.description,
+                createdAt: assessment.createdAt,
+                totalSubmissions: completed.count + pending.count + incomplete.count,
+                completedSubmissions: completed.count,
+                pendingSubmissions: pending.count,
+                incompleteSubmissions: incomplete.count,
+                avgScore: Math.round((completed.avgScore || 0) * 10) / 10,
+                completionRate: (completed.count + pending.count + incomplete.count) > 0
+                    ? Math.round((completed.count / (completed.count + pending.count + incomplete.count)) * 100)
+                    : 0,
+                distribution
+            };
+        }));
+
+        res.json({
+            tests: testsWithStats,
+            totalTests: testsWithStats.length
+        });
+    } catch (error) {
+        console.error('Tests analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/analytics/tests/:testId
+// @desc    Get detailed analytics for a specific test/assessment
+// @access  Admin
+router.get('/analytics/tests/:testId', protect, isAdmin, async (req, res) => {
+    try {
+        const assessment = await Assessment.findById(req.params.testId);
+        if (!assessment) {
+            return res.status(404).json({ message: 'Assessment not found' });
+        }
+
+        // Get all submissions for this test
+        const submissions = await Submission.find({ assessmentId: assessment._id, status: 'complete' })
+            .populate('studentId', 'name accessId class section')
+            .populate('schoolId', 'name schoolId logo')
+            .select('totalScore sectionScores assignedBucket submittedAt studentId schoolId');
+
+        // Calculate overall stats
+        const totalSubmissions = submissions.length;
+        const avgScore = totalSubmissions > 0
+            ? Math.round(submissions.reduce((acc, s) => acc + s.totalScore, 0) / totalSubmissions * 10) / 10
+            : 0;
+
+        // Bucket distribution
+        const distribution = { doingWell: 0, needsSupport: 0, needsAttention: 0 };
+        submissions.forEach(sub => {
+            const bucket = getOverallBucket(sub.totalScore);
+            if (bucket !== 'unknown') distribution[bucket]++;
+        });
+
+        // Skill distribution
+        const skillDistribution = {
+            A: { green: 0, yellow: 0, red: 0 },
+            B: { green: 0, yellow: 0, red: 0 },
+            C: { green: 0, yellow: 0, red: 0 },
+            D: { green: 0, yellow: 0, red: 0 }
+        };
+        submissions.forEach(sub => {
+            if (sub.sectionScores) {
+                Object.entries(sub.sectionScores).forEach(([section, score]) => {
+                    if (skillDistribution[section]) {
+                        const bucket = getBucketCategory(score);
+                        if (bucket !== 'unknown') skillDistribution[section][bucket]++;
+                    }
+                });
+            }
+        });
+
+        // School-wise breakdown
+        const schoolMap = {};
+        submissions.forEach(sub => {
+            if (sub.schoolId) {
+                const schoolId = sub.schoolId._id.toString();
+                if (!schoolMap[schoolId]) {
+                    schoolMap[schoolId] = {
+                        _id: sub.schoolId._id,
+                        name: sub.schoolId.name,
+                        schoolId: sub.schoolId.schoolId,
+                        logo: sub.schoolId.logo,
+                        submissions: 0,
+                        totalScore: 0,
+                        distribution: { doingWell: 0, needsSupport: 0, needsAttention: 0 }
+                    };
+                }
+                schoolMap[schoolId].submissions++;
+                schoolMap[schoolId].totalScore += sub.totalScore;
+                const bucket = getOverallBucket(sub.totalScore);
+                if (bucket !== 'unknown') schoolMap[schoolId].distribution[bucket]++;
+            }
+        });
+
+        const schoolBreakdown = Object.values(schoolMap).map(school => ({
+            ...school,
+            avgScore: Math.round((school.totalScore / school.submissions) * 10) / 10
+        })).sort((a, b) => b.submissions - a.submissions);
+
+        // Recent submissions
+        const recentSubmissions = submissions.slice(0, 10).map(sub => ({
+            _id: sub._id,
+            studentName: sub.studentId?.name || 'Unknown',
+            studentClass: sub.studentId?.class || '-',
+            schoolName: sub.schoolId?.name || 'Unknown',
+            totalScore: sub.totalScore,
+            bucket: sub.assignedBucket,
+            submittedAt: sub.submittedAt
+        }));
+
+        res.json({
+            assessment: {
+                _id: assessment._id,
+                title: assessment.title,
+                description: assessment.description,
+                questionCount: assessment.questions?.length || 0,
+                createdAt: assessment.createdAt
+            },
+            stats: {
+                totalSubmissions,
+                avgScore,
+                distribution,
+                skillDistribution
+            },
+            schoolBreakdown,
+            recentSubmissions
+        });
+    } catch (error) {
+        console.error('Test analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/schools/:id/analytics
+// @desc    Get school-level analytics with class breakdown
+// @access  Admin
+router.get('/schools/:id/analytics', protect, isAdmin, async (req, res) => {
+    try {
+        const school = await School.findById(req.params.id);
+        if (!school) {
+            return res.status(404).json({ message: 'School not found' });
+        }
+
+        // Get all students and group by class
+        const students = await Student.find({ schoolId: school._id, isActive: true })
+            .select('name accessId class section rollNo');
+
+        // Get all submissions for this school
+        const submissions = await Submission.find({ schoolId: school._id, status: 'complete' })
+            .populate('studentId', 'class section name')
+            .select('studentId totalScore sectionScores assignedBucket submittedAt');
+
+        // Group data by class
+        const classMap = {};
+        students.forEach(student => {
+            const cls = student.class || 'Unknown';
+            if (!classMap[cls]) {
+                classMap[cls] = {
+                    students: [],
+                    submissions: [],
+                    totalStudents: 0,
+                    completedStudents: 0,
+                    skillDistribution: {
+                        A: { green: 0, yellow: 0, red: 0 }, B: { green: 0, yellow: 0, red: 0 },
+                        C: { green: 0, yellow: 0, red: 0 }, D: { green: 0, yellow: 0, red: 0 }
+                    },
+                    overallDistribution: { doingWell: 0, needsSupport: 0, needsAttention: 0 }
+                };
+            }
+            classMap[cls].students.push(student._id.toString());
+            classMap[cls].totalStudents++;
+        });
+
+        // Assign submissions to classes and calculate distributions
+        const completedStudentIds = new Set();
+        submissions.forEach(sub => {
+            if (!sub.studentId) return;
+            const cls = sub.studentId.class || 'Unknown';
+            if (classMap[cls]) {
+                completedStudentIds.add(sub.studentId._id.toString());
+                classMap[cls].submissions.push(sub);
+
+                // Skill distribution
+                if (sub.sectionScores) {
+                    Object.entries(sub.sectionScores).forEach(([section, score]) => {
+                        if (classMap[cls].skillDistribution[section]) {
+                            const bucket = getBucketCategory(score);
+                            if (bucket !== 'unknown') classMap[cls].skillDistribution[section][bucket]++;
+                        }
+                    });
+                }
+                // Overall distribution
+                const overall = getOverallBucket(sub.totalScore);
+                if (overall !== 'unknown') classMap[cls].overallDistribution[overall]++;
+            }
+        });
+
+        // Update completed counts
+        students.forEach(student => {
+            const cls = student.class || 'Unknown';
+            if (completedStudentIds.has(student._id.toString())) {
+                classMap[cls].completedStudents++;
+            }
+        });
+
+        // Convert to array and calculate stats
+        const classes = Object.entries(classMap).map(([className, data]) => ({
+            className,
+            totalStudents: data.totalStudents,
+            completedStudents: data.completedStudents,
+            pendingStudents: data.totalStudents - data.completedStudents,
+            completionRate: data.totalStudents > 0 ? Math.round((data.completedStudents / data.totalStudents) * 100) : 0,
+            avgScore: data.submissions.length > 0
+                ? Math.round(data.submissions.reduce((sum, s) => sum + (s.totalScore || 0), 0) / data.submissions.length)
+                : 0,
+            skillDistribution: data.skillDistribution,
+            overallDistribution: data.overallDistribution
+        })).sort((a, b) => {
+            // Sort classes naturally (1, 2, 3... not 1, 10, 11...)
+            const aNum = parseInt(a.className) || 0;
+            const bNum = parseInt(b.className) || 0;
+            return aNum - bNum;
+        });
+
+        // Recent submissions
+        const recentSubmissions = submissions
+            .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+            .slice(0, 10)
+            .map(sub => ({
+                studentName: sub.studentId?.name || 'Unknown',
+                class: sub.studentId?.class || 'Unknown',
+                section: sub.studentId?.section || '',
+                totalScore: sub.totalScore,
+                bucket: sub.assignedBucket,
+                submittedAt: sub.submittedAt
+            }));
+
+        // School overall stats
+        const totalStudents = students.length;
+        const completedCount = completedStudentIds.size;
+
+        // Monthly trend for this school (last 6 months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const monthlyTrend = await Submission.aggregate([
+            { $match: { schoolId: school._id, status: 'complete', submittedAt: { $gte: sixMonthsAgo } } },
+            {
+                $group: {
+                    _id: { year: { $year: '$submittedAt' }, month: { $month: '$submittedAt' } },
+                    count: { $sum: 1 },
+                    avgScore: { $avg: '$totalScore' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+
+        // Weekly trend for this school (last 8 weeks)
+        const eightWeeksAgo = new Date();
+        eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+
+        const weeklyTrend = await Submission.aggregate([
+            { $match: { schoolId: school._id, status: 'complete', submittedAt: { $gte: eightWeeksAgo } } },
+            {
+                $group: {
+                    _id: { year: { $year: '$submittedAt' }, week: { $week: '$submittedAt' } },
+                    count: { $sum: 1 },
+                    avgScore: { $avg: '$totalScore' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.week': 1 } }
+        ]);
+
+        res.json({
+            school: {
+                _id: school._id,
+                name: school.name,
+                schoolId: school.schoolId,
+                logo: school.logo,
+                address: school.address
+            },
+            stats: {
+                totalStudents,
+                completedStudents: completedCount,
+                pendingStudents: totalStudents - completedCount,
+                completionRate: totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0
+            },
+            classes,
+            recentSubmissions,
+            monthlyTrend: monthlyTrend.map(m => ({
+                month: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+                count: m.count,
+                avgScore: Math.round(m.avgScore * 10) / 10
+            })),
+            weeklyTrend: weeklyTrend.map(w => ({
+                week: `W${w._id.week} ${w._id.year}`,
+                count: w.count,
+                avgScore: Math.round(w.avgScore * 10) / 10
+            }))
+        });
+
+    } catch (error) {
+        console.error('School analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/schools/:id/class/:className/analytics
+// @desc    Get class-level analytics with student list
+// @access  Admin
+router.get('/schools/:id/class/:className/analytics', protect, isAdmin, async (req, res) => {
+    try {
+        const { section } = req.query;
+        const school = await School.findById(req.params.id);
+        if (!school) {
+            return res.status(404).json({ message: 'School not found' });
+        }
+
+        // Build student query
+        const studentQuery = {
+            schoolId: school._id,
+            isActive: true,
+            class: req.params.className
+        };
+        if (section) studentQuery.section = section;
+
+        const students = await Student.find(studentQuery)
+            .select('name accessId class section rollNo testStatus')
+            .sort({ section: 1, rollNo: 1, name: 1 });
+
+        // Get submissions for these students
+        const studentIds = students.map(s => s._id);
+        const submissions = await Submission.find({
+            studentId: { $in: studentIds },
+            status: 'complete'
+        }).select('studentId totalScore sectionScores assignedBucket submittedAt');
+
+        // Map submissions by student
+        const submissionMap = {};
+        submissions.forEach(sub => {
+            submissionMap[sub.studentId.toString()] = sub;
+        });
+
+        // Build student list with analytics
+        const studentsWithAnalytics = students.map(student => {
+            const sub = submissionMap[student._id.toString()];
+            return {
+                _id: student._id,
+                name: student.name,
+                accessId: student.accessId,
+                class: student.class,
+                section: student.section,
+                rollNo: student.rollNo,
+                hasSubmission: !!sub,
+                totalScore: sub?.totalScore || null,
+                sectionScores: sub?.sectionScores || null,
+                bucket: sub?.assignedBucket || null,
+                submittedAt: sub?.submittedAt || null
+            };
+        });
+
+        // Calculate class-wide stats
+        const completedStudents = studentsWithAnalytics.filter(s => s.hasSubmission);
+        const avgScore = completedStudents.length > 0
+            ? Math.round(completedStudents.reduce((sum, s) => sum + (s.totalScore || 0), 0) / completedStudents.length)
+            : 0;
+
+        // Skill distribution for the class
+        const skillDistribution = {
+            A: { green: 0, yellow: 0, red: 0 }, B: { green: 0, yellow: 0, red: 0 },
+            C: { green: 0, yellow: 0, red: 0 }, D: { green: 0, yellow: 0, red: 0 }
+        };
+        const overallDistribution = { doingWell: 0, needsSupport: 0, needsAttention: 0 };
+
+        submissions.forEach(sub => {
+            if (sub.sectionScores) {
+                Object.entries(sub.sectionScores).forEach(([section, score]) => {
+                    if (skillDistribution[section]) {
+                        const bucket = getBucketCategory(score);
+                        if (bucket !== 'unknown') skillDistribution[section][bucket]++;
+                    }
+                });
+            }
+            const overall = getOverallBucket(sub.totalScore);
+            if (overall !== 'unknown') overallDistribution[overall]++;
+        });
+
+        // Get unique sections for filter
+        const allStudentsInClass = await Student.find({
+            schoolId: school._id,
+            isActive: true,
+            class: req.params.className
+        }).select('section');
+        const sections = [...new Set(allStudentsInClass.map(s => s.section).filter(Boolean))].sort();
+
+        res.json({
+            school: { _id: school._id, name: school.name, schoolId: school.schoolId },
+            className: req.params.className,
+            currentSection: section || null,
+            sections,
+            stats: {
+                totalStudents: students.length,
+                completedStudents: completedStudents.length,
+                pendingStudents: students.length - completedStudents.length,
+                completionRate: students.length > 0 ? Math.round((completedStudents.length / students.length) * 100) : 0,
+                avgScore
+            },
+            skillDistribution,
+            overallDistribution,
+            students: studentsWithAnalytics
+        });
+    } catch (error) {
+        console.error('Class analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/students/:studentId/analytics
+// @desc    Get individual student analytics with submission details
+// @access  Admin
+router.get('/students/:studentId/analytics', protect, isAdmin, async (req, res) => {
+    try {
+        const { testId } = req.query; // Optional test filter
+
+        // Find the student
+        const student = await Student.findById(req.params.studentId)
+            .populate('schoolId', 'name schoolId logo');
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Build submission query
+        let submissionQuery = {
+            studentId: student._id,
+            status: 'complete'
+        };
+        if (testId) {
+            submissionQuery.assessmentId = testId;
+        }
+
+        // Get all submissions for this student
+        const submissions = await Submission.find(submissionQuery)
+            .populate('assessmentId', 'title description questions')
+            .sort({ submittedAt: -1 });
+
+        // Format submissions for frontend with detailed question answers
+        const formattedSubmissions = submissions.map(sub => {
+            // Map answers with question details
+            const answersWithDetails = sub.answers?.map(ans => {
+                const question = sub.assessmentId?.questions?.[ans.questionIndex];
+                const selectedOption = question?.options?.[ans.selectedOption];
+                return {
+                    questionIndex: ans.questionIndex,
+                    section: ans.section || question?.section,
+                    questionText: question?.text || 'Question not found',
+                    options: question?.options?.map(opt => ({
+                        label: opt.label,
+                        marks: opt.marks
+                    })) || [],
+                    selectedOptionIndex: ans.selectedOption,
+                    selectedOptionLabel: selectedOption?.label || 'Unknown',
+                    marks: ans.marks,
+                    timeTakenForQuestion: ans.timeTakenForQuestion
+                };
+            }) || [];
+
+            return {
+                _id: sub._id,
+                assessmentId: sub.assessmentId?._id,
+                assessmentTitle: sub.assessmentId?.title || 'Unknown Assessment',
+                totalScore: sub.totalScore,
+                sectionScores: sub.sectionScores,
+                sectionBuckets: sub.sectionBuckets,
+                bucket: sub.assignedBucket,
+                primarySkillArea: sub.primarySkillArea,
+                secondarySkillArea: sub.secondarySkillArea,
+                timeTaken: sub.timeTaken,
+                answers: answersWithDetails,
+                moodCheck: sub.moodCheck,
+                submittedAt: sub.submittedAt
+            };
+        });
+
+        // Get list of all tests this student has taken (for filter dropdown)
+        const allSubmissions = await Submission.find({
+            studentId: student._id,
+            status: 'complete'
+        }).populate('assessmentId', 'title').select('assessmentId');
+
+        const testsMap = {};
+        allSubmissions.forEach(sub => {
+            if (sub.assessmentId) {
+                testsMap[sub.assessmentId._id.toString()] = {
+                    _id: sub.assessmentId._id,
+                    title: sub.assessmentId.title
+                };
+            }
+        });
+        const availableTests = Object.values(testsMap);
+
+        res.json({
+            _id: student._id,
+            name: student.name,
+            accessId: student.accessId,
+            class: student.class,
+            section: student.section,
+            rollNo: student.rollNo,
+            school: student.schoolId ? {
+                _id: student.schoolId._id,
+                name: student.schoolId.name,
+                schoolId: student.schoolId.schoolId,
+                logo: student.schoolId.logo
+            } : null,
+            submissions: formattedSubmissions,
+            availableTests
+        });
+    } catch (error) {
+        console.error('Student analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 // @route   GET /api/admin/assessments
 // @desc    Get all assessments
