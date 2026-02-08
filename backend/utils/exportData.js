@@ -122,7 +122,13 @@ const calculateAnalytics = (submissions) => {
             avgScore: 0,
             avgTimeTaken: 0,
             bucketDistribution: {},
-            sectionAverages: { A: 0, B: 0, C: 0, D: 0 }
+            sectionAverages: { A: 0, B: 0, C: 0, D: 0 },
+            sectionDistributions: {
+                A: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 },
+                B: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 },
+                C: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 },
+                D: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 }
+            }
         };
     }
 
@@ -130,6 +136,14 @@ const calculateAnalytics = (submissions) => {
     let totalScore = 0;
     let totalTime = 0;
     const sectionTotals = { A: 0, B: 0, C: 0, D: 0 };
+
+    // Initialize section distributions
+    const sectionDistributions = {
+        A: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 },
+        B: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 },
+        C: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 },
+        D: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 }
+    };
 
     submissions.forEach(sub => {
         totalScore += sub.totalScore || 0;
@@ -139,10 +153,25 @@ const calculateAnalytics = (submissions) => {
         bucketDistribution[bucket] = (bucketDistribution[bucket] || 0) + 1;
 
         if (sub.sectionScores) {
+            // A: Focus & Attention
             sectionTotals.A += sub.sectionScores.A || 0;
+            const bucketA = getBucketLabel(sub.sectionScores.A || 0);
+            if (sectionDistributions.A[bucketA] !== undefined) sectionDistributions.A[bucketA]++;
+
+            // B: Self-Esteem
             sectionTotals.B += sub.sectionScores.B || 0;
+            const bucketB = getBucketLabel(sub.sectionScores.B || 0);
+            if (sectionDistributions.B[bucketB] !== undefined) sectionDistributions.B[bucketB]++;
+
+            // C: Social Confidence
             sectionTotals.C += sub.sectionScores.C || 0;
+            const bucketC = getBucketLabel(sub.sectionScores.C || 0);
+            if (sectionDistributions.C[bucketC] !== undefined) sectionDistributions.C[bucketC]++;
+
+            // D: Digital Hygiene
             sectionTotals.D += sub.sectionScores.D || 0;
+            const bucketD = getBucketLabel(sub.sectionScores.D || 0);
+            if (sectionDistributions.D[bucketD] !== undefined) sectionDistributions.D[bucketD]++;
         }
     });
 
@@ -156,7 +185,8 @@ const calculateAnalytics = (submissions) => {
             B: Math.round(sectionTotals.B / total * 10) / 10,
             C: Math.round(sectionTotals.C / total * 10) / 10,
             D: Math.round(sectionTotals.D / total * 10) / 10
-        }
+        },
+        sectionDistributions
     };
 };
 

@@ -58,7 +58,7 @@ const ThankYou = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                 >
-                    You have successfully completed the wellness assessment.
+                    You have successfully completed the wellness check-in.
                     Your responses have been recorded.
                 </motion.p>
 
@@ -70,7 +70,7 @@ const ThankYou = () => {
                 >
                     <div className="note-icon">💡</div>
                     <p>
-                        Remember: This assessment helps us understand how we can support your growth.
+                        Remember: This check-in helps us understand how we can support your growth.
                         There are no right or wrong answers, only opportunities to learn more about yourself.
                     </p>
                 </motion.div>
@@ -83,11 +83,11 @@ const ThankYou = () => {
                 >
                     <div className="badge-item">
                         <span className="badge-emoji">⭐</span>
-                        <span>Assessment Complete</span>
+                        <span>Check-in Complete</span>
                     </div>
                     <div className="badge-item">
                         <span className="badge-emoji">🎯</span>
-                        <span>All Questions Answered</span>
+                        <span>All Items Answered</span>
                     </div>
                     <div className="badge-item">
                         <span className="badge-emoji">🌟</span>

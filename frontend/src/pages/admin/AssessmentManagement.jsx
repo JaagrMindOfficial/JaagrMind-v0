@@ -9,9 +9,9 @@ import api from '../../services/api';
 import './AssessmentManagement.css';
 
 const defaultBuckets = [
-    { label: 'Skill Stable', minScore: 8, maxScore: 14 },
-    { label: 'Skill Emerging', minScore: 15, maxScore: 22 },
-    { label: 'Skill Support Needed', minScore: 23, maxScore: 32 }
+    { label: 'Doing Well', minScore: 8, maxScore: 14 },
+    { label: 'Seeking Support', minScore: 15, maxScore: 22 },
+    { label: 'Priority Support', minScore: 23, maxScore: 32 }
 ];
 
 const defaultSections = [
@@ -119,7 +119,7 @@ const AssessmentManagement = () => {
 
     const addQuestion = () => {
         if (!currentQuestion.text.trim()) {
-            toast.warning('Please enter question text');
+            toast.warning('Please enter item text');
             return;
         }
         if (currentQuestion.options.some(o => !o.label.trim())) {
@@ -172,7 +172,7 @@ const AssessmentManagement = () => {
         // Check if any questions use this section
         const hasQuestions = formData.questions.some(q => q.section === key);
         if (hasQuestions) {
-            toast.warning('Cannot remove section with existing questions. Remove or reassign questions first.');
+            toast.warning('Cannot remove section with existing items. Remove or reassign items first.');
             return;
         }
         setFormData({
@@ -187,7 +187,7 @@ const AssessmentManagement = () => {
             return;
         }
         if (formData.questions.length === 0 && !editingAssessment) {
-            toast.warning('Please add at least one question');
+            toast.warning('Please add at least one item');
             return;
         }
         if (formData.customSections.length === 0) {
@@ -248,20 +248,20 @@ const AssessmentManagement = () => {
 
     if (loading) {
         return (
-            <Layout title="Assessment Management">
+            <Layout title="Check-in Management">
                 <div className="loading-container">
                     <div className="spinner"></div>
-                    <p className="loading-text">Loading assessments...</p>
+                    <p className="loading-text">Loading check-ins...</p>
                 </div>
             </Layout>
         );
     }
 
     return (
-        <Layout title="Assessment Management" subtitle="Manage wellness assessments">
+        <Layout title="Check-in Management" subtitle="Manage wellness check-ins">
             <div className="page-header">
                 <div>
-                    <span className="text-muted">{assessments.length} assessment(s)</span>
+                    <span className="text-muted">{assessments.length} check-in(s)</span>
                 </div>
                 <motion.button
                     className="btn btn-primary"
@@ -269,7 +269,7 @@ const AssessmentManagement = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                 >
-                    + Create Assessment
+                    + Create Check-in
                 </motion.button>
             </div>
 
@@ -292,13 +292,13 @@ const AssessmentManagement = () => {
 
                         <h3 className="assessment-title">{assessment.title}</h3>
                         <p className="assessment-desc">
-                            {assessment.description || 'Wellness assessment for students'}
+                            {assessment.description || 'Wellness check-in for students'}
                         </p>
 
                         <div className="assessment-stats">
                             <div className="assessment-stat">
                                 <span className="assessment-stat-value">{assessment.questionCount || assessment.questions?.length || 0}</span>
-                                <span className="assessment-stat-label">Questions</span>
+                                <span className="assessment-stat-label">Items</span>
                             </div>
                             <div className="assessment-stat">
                                 <span className="assessment-stat-value">{assessment.inactivityAlertTime || 40}s</span>
@@ -323,19 +323,19 @@ const AssessmentManagement = () => {
                         </div>
 
                         <div className="assessment-buckets">
-                            <h4>Score Interpretation</h4>
+                            <h4>Index Interpretation</h4>
                             <div className="bucket-list">
                                 <div className="bucket-item">
                                     <span className="bucket-dot" style={{ background: '#10B981' }}></span>
-                                    <span>8-14: Skill Stable</span>
+                                    <span>8-14: Doing Well</span>
                                 </div>
                                 <div className="bucket-item">
                                     <span className="bucket-dot" style={{ background: '#F59E0B' }}></span>
-                                    <span>15-22: Skill Emerging</span>
+                                    <span>15-22: Seeking Support</span>
                                 </div>
                                 <div className="bucket-item">
                                     <span className="bucket-dot" style={{ background: '#EF4444' }}></span>
-                                    <span>23-32: Support Needed</span>
+                                    <span>23-32: Priority Support</span>
                                 </div>
                             </div>
                         </div>
@@ -345,7 +345,7 @@ const AssessmentManagement = () => {
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => openQuestionsModal(assessment)}
                             >
-                                <FontAwesomeIcon icon={faList} /> View Questions
+                                <FontAwesomeIcon icon={faList} /> View Items
                             </button>
                             <button
                                 className="btn btn-secondary btn-sm"
@@ -385,10 +385,10 @@ const AssessmentManagement = () => {
                         <div className="empty-state-icon">
                             <FontAwesomeIcon icon={faClipboardList} />
                         </div>
-                        <h3 className="empty-state-title">No Assessments</h3>
-                        <p className="empty-state-text">Create your first assessment</p>
+                        <h3 className="empty-state-title">No Check-ins</h3>
+                        <p className="empty-state-text">Create your first check-in</p>
                         <button className="btn btn-primary" onClick={openCreateModal}>
-                            Create Assessment
+                            Create Check-in
                         </button>
                     </div>
                 )}
@@ -413,20 +413,20 @@ const AssessmentManagement = () => {
                         >
                             <div className="modal-header">
                                 <h2 className="modal-title">
-                                    {editingAssessment ? 'Edit Assessment' : 'Create New Assessment'}
+                                    {editingAssessment ? 'Edit Check-in' : 'Create New Check-in'}
                                 </h2>
                                 <button className="modal-close" onClick={closeModal}>×</button>
                             </div>
 
                             <div className="modal-body modal-body-scroll">
                                 <div className="form-group">
-                                    <label className="form-label">Assessment Title *</label>
+                                    <label className="form-label">Check-in Title *</label>
                                     <input
                                         type="text"
                                         className="form-input"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        placeholder="e.g., Student Wellness Assessment"
+                                        placeholder="e.g., Student Wellness Check-in"
                                     />
                                 </div>
 
@@ -436,7 +436,7 @@ const AssessmentManagement = () => {
                                         className="form-input"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        placeholder="Brief description of the assessment"
+                                        placeholder="Brief description of the check-in"
                                         rows="2"
                                     />
                                 </div>
@@ -460,7 +460,7 @@ const AssessmentManagement = () => {
                                             value={formData.inactivityEndTime}
                                             onChange={(e) => setFormData({ ...formData, inactivityEndTime: parseInt(e.target.value) || 120 })}
                                         />
-                                        <small className="form-hint">End test after this many total seconds of inactivity</small>
+                                        <small className="form-hint">End check-in after this many total seconds of inactivity</small>
                                     </div>
                                 </div>
 
@@ -485,9 +485,9 @@ const AssessmentManagement = () => {
                                     </div>
                                 </div>
 
-                                {/* Questions Section */}
+                                {/* Items Section */}
                                 <div className="questions-section">
-                                    <h3>Questions ({formData.questions.length})</h3>
+                                    <h3>Items ({formData.questions.length})</h3>
 
                                     {formData.questions.length > 0 && (
                                         <div className="questions-list">
@@ -506,9 +506,9 @@ const AssessmentManagement = () => {
                                         </div>
                                     )}
 
-                                    {/* Add Question Form */}
+                                    {/* Add Item Form */}
                                     <div className="add-question-form">
-                                        <h4>Add New Question</h4>
+                                        <h4>Add New Item</h4>
                                         <div className="form-group">
                                             <label className="form-label">Section</label>
                                             <select
@@ -525,7 +525,7 @@ const AssessmentManagement = () => {
                                         </div>
 
                                         <div className="form-group">
-                                            <label className="form-label">Question Text</label>
+                                            <label className="form-label">Item Text</label>
                                             <textarea
                                                 className="form-input"
                                                 value={currentQuestion.text}
@@ -536,7 +536,7 @@ const AssessmentManagement = () => {
                                         </div>
 
                                         <div className="options-form">
-                                            <label className="form-label">Options (1=low score, 4=high score)</label>
+                                            <label className="form-label">Options (1=low, 4=high)</label>
                                             {currentQuestion.options.map((opt, idx) => (
                                                 <div key={idx} className="option-row">
                                                     <span className="option-mark">{idx + 1}</span>
@@ -560,7 +560,7 @@ const AssessmentManagement = () => {
                                             className="btn btn-secondary"
                                             onClick={addQuestion}
                                         >
-                                            + Add Question
+                                            + Add Item
                                         </button>
                                     </div>
                                 </div>
@@ -576,7 +576,7 @@ const AssessmentManagement = () => {
                                     onClick={handleSave}
                                     disabled={saving}
                                 >
-                                    {saving ? 'Saving...' : (editingAssessment ? 'Update Assessment' : 'Create Assessment')}
+                                    {saving ? 'Saving...' : (editingAssessment ? 'Update Check-in' : 'Create Check-in')}
                                 </button>
                             </div>
                         </motion.div>
@@ -608,7 +608,7 @@ const AssessmentManagement = () => {
 
                             <div className="modal-body">
                                 <p className="text-muted" style={{ marginBottom: '1rem' }}>
-                                    Add or remove sections for this assessment. Default sections are A-D.
+                                    Add or remove sections for this check-in. Default sections are A-D.
                                 </p>
 
                                 <div className="sections-manager">
@@ -691,7 +691,7 @@ const AssessmentManagement = () => {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="modal-header">
-                                <h2 className="modal-title">{viewingAssessment.title} - Questions</h2>
+                                <h2 className="modal-title">{viewingAssessment.title} - Items</h2>
                                 <button className="modal-close" onClick={() => setShowQuestionsModal(false)}>×</button>
                             </div>
 
@@ -701,7 +701,7 @@ const AssessmentManagement = () => {
                                     return (
                                         <div key={idx} className="view-question-item">
                                             <div className="view-question-header">
-                                                <span className="question-number">Q{idx + 1}</span>
+                                                <span className="question-number">#{idx + 1}</span>
                                                 <span className="question-section-badge">
                                                     {q.section}: {sectionDef?.name || q.section}
                                                 </span>

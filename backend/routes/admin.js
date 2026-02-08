@@ -292,11 +292,92 @@ router.get('/dashboard', protect, isAdmin, async (req, res) => {
 
         const analytics = calculateAnalytics(submissions);
 
-        // Get recent schools
-        const recentSchools = await School.find({ isActive: true })
-            .select('name schoolId logo createdAt')
-            .sort({ createdAt: -1 })
-            .limit(5);
+        // Calculate Wellness Trends (Last 6 Months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+
+        const trendSubmissions = await Submission.aggregate([
+            {
+                $match: {
+                    submittedAt: { $gte: sixMonthsAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        month: { $month: "$submittedAt" },
+                        year: { $year: "$submittedAt" }
+                    },
+                    avgScore: { $avg: "$totalScore" },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        const wellnessTrends = [];
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        // Fill in missing months and format
+        for (let i = 0; i < 6; i++) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - (5 - i));
+            const month = d.getMonth() + 1;
+            const year = d.getFullYear();
+
+            const found = trendSubmissions.find(t => t._id.month === month && t._id.year === year);
+            wellnessTrends.push({
+                name: monthNames[month - 1],
+                score: found ? Math.round(found.avgScore * 10) / 10 : 0,
+                count: found ? found.count : 0
+            });
+        }
+
+        // Calculate Attention Needed (Schools with high % of 'red' bucket submissions)
+        const attentionStats = await Submission.aggregate([
+            {
+                $lookup: {
+                    from: 'schools',
+                    localField: 'schoolId',
+                    foreignField: '_id',
+                    as: 'school'
+                }
+            },
+            { $unwind: '$school' },
+            { $match: { 'school.isActive': true } },
+            {
+                $group: {
+                    _id: '$schoolId',
+                    name: { $first: '$school.name' },
+                    total: { $sum: 1 },
+                    redCount: {
+                        $sum: {
+                            $cond: [{ $eq: ['$assignedBucket', 'red'] }, 1, 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    total: 1,
+                    redCount: 1,
+                    riskRatio: { $divide: ['$redCount', '$total'] }
+                }
+            },
+            { $match: { total: { $gte: 5 } } }, // Only schools with at least 5 submissions
+            { $sort: { riskRatio: -1 } },
+            { $limit: 5 }
+        ]);
+
+        const attentionNeeded = attentionStats.map(s => ({
+            id: s._id,
+            name: s.name,
+            riskScore: Math.round(s.riskRatio * 100),
+            details: `${s.redCount}/${s.total} students need support`
+        }));
+
 
         res.json({
             overview: {
@@ -306,7 +387,9 @@ router.get('/dashboard', protect, isAdmin, async (req, res) => {
                 totalSubmissions: submissions.length
             },
             analytics,
-            recentSchools
+            analytics,
+            wellnessTrends,
+            attentionNeeded
         });
     } catch (error) {
         console.error('Dashboard error:', error);

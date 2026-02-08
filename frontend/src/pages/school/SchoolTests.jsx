@@ -89,7 +89,7 @@ const SchoolTests = () => {
 
     const handleResetTest = async (studentId) => {
         if (!selectedTest) return;
-        if (!window.confirm('Reset this student\'s test? They will need to take it again.')) return;
+        if (!window.confirm('Reset this student\'s check-in? They will need to take it again.')) return;
 
         try {
             await api.put(`/api/school/students/${studentId}/reset`, {
@@ -97,7 +97,7 @@ const SchoolTests = () => {
             });
             fetchTestStatus(selectedTest._id, filterClass, filterSection);
         } catch (error) {
-            toast.error('Error resetting test');
+            toast.error('Error resetting check-in');
         }
     };
 
@@ -111,11 +111,11 @@ const SchoolTests = () => {
                 targetClass: assignTarget.class || undefined,
                 targetSection: assignTarget.section || undefined
             });
-            toast.success('Test assigned successfully!');
+            toast.success('Check-in assigned successfully!');
             setShowAssignModal(false);
             fetchTestStatus(selectedTest._id, filterClass, filterSection);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error assigning test');
+            toast.error(error.response?.data?.message || 'Error assigning check-in');
         } finally {
             setAssigning(false);
         }
@@ -130,10 +130,10 @@ const SchoolTests = () => {
                 targetType: 'students',
                 studentIds: selectedStudents
             });
-            toast.success(`Test assigned to ${selectedStudents.length} students!`);
+            toast.success(`Check-in assigned to ${selectedStudents.length} students!`);
             fetchTestStatus(selectedTest._id, filterClass, filterSection);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error assigning test');
+            toast.error(error.response?.data?.message || 'Error assigning check-in');
         } finally {
             setAssigning(false);
         }
@@ -141,17 +141,17 @@ const SchoolTests = () => {
 
     const handleUnassignFromSelected = async () => {
         if (!selectedTest || selectedStudents.length === 0) return;
-        if (!window.confirm(`Unassign test from ${selectedStudents.length} students?`)) return;
+        if (!window.confirm(`Unassign check-in from ${selectedStudents.length} students?`)) return;
         setAssigning(true);
         try {
             await api.post('/api/school/tests/unassign', {
                 assessmentId: selectedTest._id,
                 studentIds: selectedStudents
             });
-            toast.success('Test unassigned from selected students');
+            toast.success('Check-in unassigned from selected students');
             fetchTestStatus(selectedTest._id, filterClass, filterSection);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error unassigning test');
+            toast.error(error.response?.data?.message || 'Error unassigning check-in');
         } finally {
             setAssigning(false);
         }
@@ -176,7 +176,7 @@ const SchoolTests = () => {
 
     if (loading) {
         return (
-            <Layout title="Test Management">
+            <Layout title="Check-in Management">
                 <div className="loading-container">
                     <div className="spinner"></div>
                 </div>
@@ -193,7 +193,7 @@ const SchoolTests = () => {
     const pendingCount = testStatus.filter(s => s.status === 'Pending').length;
 
     return (
-        <Layout title="Test Management" subtitle="Manage assessments and track progress">
+        <Layout title="Check-in Management" subtitle="Manage check-ins and track progress">
             {/* Test Cards */}
             <div className="tests-overview">
                 {tests.map((test, index) => (
@@ -214,7 +214,7 @@ const SchoolTests = () => {
                         </div>
                         <div className="test-card-info">
                             <h3>{test.title}</h3>
-                            <p>{test.isDefault ? 'Default Assessment' : 'Custom Assessment'}</p>
+                            <p>{test.isDefault ? 'Default Check-in' : 'Custom Check-in'}</p>
                         </div>
                         <motion.button
                             className={`btn btn-sm ${copiedLink === test._id ? 'btn-success' : 'btn-secondary'}`}
@@ -326,7 +326,7 @@ const SchoolTests = () => {
                         animate={{ opacity: 1 }}
                     >
                         <div className="card-header">
-                            <h3 className="card-title">Student Test Status</h3>
+                            <h3 className="card-title">Student Check-in Status</h3>
                             <span className="text-muted">
                                 {selectedStudents.length > 0 && `${selectedStudents.length} selected`}
                             </span>
@@ -399,7 +399,7 @@ const SchoolTests = () => {
                             </div>
                         ) : (
                             <div className="empty-state">
-                                <p>No students found for this test</p>
+                                <p>No students found for this check-in</p>
                             </div>
                         )}
                     </motion.div>
@@ -416,7 +416,7 @@ const SchoolTests = () => {
                         animate={{ opacity: 1, scale: 1 }}
                     >
                         <div className="modal-header">
-                            <h2>Bulk Assign Test to Students</h2>
+                            <h2>Bulk Assign Check-in to Students</h2>
                             <button className="modal-close" onClick={() => setShowAssignModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
@@ -476,7 +476,7 @@ const SchoolTests = () => {
                                 onClick={handleAssignTest}
                                 disabled={assigning || (assignTarget.type !== 'all' && !assignTarget.class)}
                             >
-                                {assigning ? 'Assigning...' : 'Assign Test'}
+                                {assigning ? 'Assigning...' : 'Assign Check-in'}
                             </button>
                         </div>
                     </motion.div>

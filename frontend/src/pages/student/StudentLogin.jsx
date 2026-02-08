@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { faMoon, faSun, faHome } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
@@ -118,8 +118,17 @@ const StudentLogin = () => {
                 <button
                     className="theme-toggle-btn"
                     onClick={toggleTheme}
+                    title="Toggle Theme"
                 >
                     <FontAwesomeIcon icon={theme === 'light' ? faMoon : faSun} />
+                </button>
+
+                <button
+                    className="home-btn"
+                    onClick={() => navigate('/')}
+                    title="Go to Home"
+                >
+                    <FontAwesomeIcon icon={faHome} />
                 </button>
 
                 {/* JaagrMind Logo */}
@@ -131,7 +140,7 @@ const StudentLogin = () => {
                     >
                         <img src={logoImg} alt="JaagrMind" className="student-logo-img" />
                     </motion.div>
-                    <p className="student-tagline">Student Wellness Assessment</p>
+                    <p className="student-tagline">Student Wellness Check-in</p>
                 </div>
 
                 {/* School Branding */}
@@ -244,7 +253,7 @@ const StudentLogin = () => {
                                 <span className="btn-spinner"></span>
                             ) : (
                                 <>
-                                    Start Assessment
+                                    Start Check-in
                                     <span className="btn-arrow">→</span>
                                 </>
                             )}

@@ -282,7 +282,7 @@ const Analytics = () => {
                     <div className="stat-icon"><FontAwesomeIcon icon={faChartLine} /></div>
                     <div className="stat-content">
                         <span className="stat-value">{stats.completionRate !== undefined ? `${stats.completionRate}%` : (stats.avgScore || 0)}</span>
-                        <span className="stat-label">{stats.completionRate !== undefined ? 'Completion' : 'Avg Score'}</span>
+                        <span className="stat-label">{stats.completionRate !== undefined ? 'Completion' : 'Avg Index'}</span>
                     </div>
                 </motion.div>
             </div>
@@ -294,7 +294,7 @@ const Analytics = () => {
         const chartData = [
             { name: 'Doing Well', value: data?.doingWell || 0, color: BUCKET_COLORS.doingWell },
             { name: 'Needs Support', value: data?.needsSupport || 0, color: BUCKET_COLORS.needsSupport },
-            { name: 'Needs Attention', value: data?.needsAttention || 0, color: BUCKET_COLORS.needsAttention }
+            { name: 'Priority Support', value: data?.needsAttention || 0, color: BUCKET_COLORS.needsAttention }
         ];
         const total = chartData.reduce((sum, d) => sum + d.value, 0);
         const wellPercent = total > 0 ? Math.round((data?.doingWell || 0) / total * 100) : 0;
@@ -313,7 +313,7 @@ const Analytics = () => {
                     </ResponsiveContainer>
                     <div className="donut-center">
                         <span className="donut-percent">{wellPercent}%</span>
-                        <span className="donut-label">Stable</span>
+                        <span className="donut-label">Doing Well</span>
                     </div>
                 </div>
                 <div className="chart-legend">
@@ -336,18 +336,20 @@ const Analytics = () => {
                 <div className="empty-chart-state">
                     <FontAwesomeIcon icon={faChartLine} className="empty-icon" />
                     <p>No data available yet</p>
-                    <span>Monthly trends will appear here once submissions are recorded</span>
+                    <span>Monthly trends will appear here once check-ins are recorded</span>
                 </div>
             ) : (
                 <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                        <XAxis dataKey="month" stroke="var(--text-secondary)" fontSize={12} />
-                        <YAxis stroke="var(--text-secondary)" fontSize={12} />
+                        <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 12 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={false} />
+                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 12 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={false} />
                         <Tooltip
-                            contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+                            cursor={{ stroke: '#8B5CF6', strokeWidth: 2 }}
+                            contentStyle={{ background: 'rgba(255, 255, 255, 0.95)', border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#1f2937' }}
+                            itemStyle={{ color: '#1f2937' }}
                         />
-                        <Line type="monotone" dataKey="count" stroke="#8B5CF6" strokeWidth={3} dot={{ fill: '#8B5CF6', r: 4 }} name="Submissions" />
+                        <Line type="monotone" dataKey="count" stroke="#8B5CF6" strokeWidth={3} dot={{ fill: '#8B5CF6', r: 4 }} name="Check-ins" />
                     </LineChart>
                 </ResponsiveContainer>
             )}
@@ -357,7 +359,7 @@ const Analytics = () => {
     // Top Schools Bar Chart
     const TopSchoolsChart = ({ data }) => (
         <div className="chart-card bar-chart">
-            <h3>Top Schools by Submissions</h3>
+            <h3>Most Active Schools</h3>
             {(!data || data.length === 0) ? (
                 <div className="empty-chart-state">
                     <FontAwesomeIcon icon={faSchool} className="empty-icon" />
@@ -366,12 +368,16 @@ const Analytics = () => {
                 </div>
             ) : (
                 <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={data.slice(0, 6)} layout="vertical">
+                    <BarChart data={data.slice(0, 6)} layout="vertical" barSize={20}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                        <XAxis type="number" stroke="var(--text-secondary)" />
-                        <YAxis type="category" dataKey="name" width={120} stroke="var(--text-secondary)" fontSize={11} />
-                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }} />
-                        <Bar dataKey="submissionCount" fill="#8B5CF6" radius={[0, 4, 4, 0]} name="Submissions" />
+                        <XAxis type="number" tick={{ fill: '#9CA3AF', fontSize: 12 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={false} />
+                        <YAxis type="category" dataKey="name" width={120} tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={false} />
+                        <Tooltip
+                            cursor={{ fill: 'transparent' }}
+                            contentStyle={{ background: 'rgba(255, 255, 255, 0.95)', border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#1f2937' }}
+                            itemStyle={{ color: '#1f2937' }}
+                        />
+                        <Bar dataKey="submissionCount" fill="#8B5CF6" radius={[0, 4, 4, 0]} name="Check-ins" />
                     </BarChart>
                 </ResponsiveContainer>
             )}
@@ -505,7 +511,7 @@ const Analytics = () => {
                             <th>Student</th>
                             <th>Roll No</th>
                             <th>Section</th>
-                            <th>Score</th>
+                            <th>Index</th>
                             <th>Status</th>
                             <th></th>
                         </tr>
@@ -628,7 +634,7 @@ const Analytics = () => {
 
                         {/* Assessment History with Question Details */}
                         <div className="assessment-history">
-                            <h3><FontAwesomeIcon icon={faClipboardCheck} /> Assessment History</h3>
+                            <h3><FontAwesomeIcon icon={faClipboardCheck} /> Check-in History</h3>
                             {student.submissions.map((sub, i) => (
                                 <motion.div
                                     key={sub._id || i}
@@ -646,7 +652,7 @@ const Analytics = () => {
                                             <span className="sub-date">{new Date(sub.submittedAt).toLocaleDateString()}</span>
                                         </div>
                                         <div className="sub-header-right">
-                                            <span className="sub-score-badge">Score: {sub.totalScore}</span>
+                                            <span className="sub-score-badge">Index: {sub.totalScore}</span>
                                             <span className={`bucket-badge ${sub.bucket?.toLowerCase().replace(/\s+/g, '')}`}>
                                                 {sub.bucket}
                                             </span>
@@ -669,7 +675,7 @@ const Analytics = () => {
                                             >
                                                 <div className="questions-header">
                                                     <FontAwesomeIcon icon={faListOl} />
-                                                    <span>Question Responses ({sub.answers?.length || 0} questions)</span>
+                                                    <span>Responses ({sub.answers?.length || 0} items)</span>
                                                 </div>
                                                 <div className="questions-list">
                                                     {sub.answers?.map((ans, qIndex) => (
@@ -691,7 +697,7 @@ const Analytics = () => {
                                                                             </span>
                                                                             <span className="option-label">{opt.label}</span>
                                                                             {optIndex === ans.selectedOptionIndex && (
-                                                                                <span className="marks-badge">+{ans.marks} marks</span>
+                                                                                <span className="marks-badge">+{ans.marks} pts</span>
                                                                             )}
                                                                         </div>
                                                                     ))}
@@ -710,7 +716,7 @@ const Analytics = () => {
                 ) : (
                     <div className="no-submissions-state">
                         <FontAwesomeIcon icon={faClock} />
-                        <p>This student has not completed any assessments yet.</p>
+                        <p>This student has not completed any check-ins yet.</p>
                     </div>
                 )}
             </div>
@@ -749,7 +755,7 @@ const Analytics = () => {
                             exit={{ opacity: 0, x: -20 }}
                             className="analytics-content"
                         >
-                            <h1 className="page-title">National Analytics Overview</h1>
+                            <h1 className="page-title">National Insights Overview</h1>
                             <HeroStats stats={nationwideData.totals} />
 
                             <div className="charts-row">
@@ -762,7 +768,7 @@ const Analytics = () => {
                             {/* Test-wise Analytics Section */}
                             {testsData && testsData.tests && testsData.tests.length > 0 && (
                                 <>
-                                    <h2 className="section-title">Test-wise Analytics</h2>
+                                    <h2 className="section-title">Check-in Insights</h2>
                                     <div className="test-cards-grid">
                                         {testsData.tests.map(test => (
                                             <motion.div
@@ -814,7 +820,7 @@ const Analytics = () => {
                                             <div className="test-detail-header">
                                                 <h3>
                                                     <FontAwesomeIcon icon={faClipboardCheck} />
-                                                    {testAnalytics.assessment.title} - Detailed Analytics
+                                                    {testAnalytics.assessment.title} - Detailed Insights
                                                 </h3>
                                                 <button className="close-btn" onClick={() => { setSelectedTest(null); setTestAnalytics(null); }}>×</button>
                                             </div>
@@ -826,7 +832,7 @@ const Analytics = () => {
                                                 </div>
                                                 <div className="test-stat-card">
                                                     <span className="stat-value">{testAnalytics.stats.avgScore}</span>
-                                                    <span className="stat-label">Average Score</span>
+                                                    <span className="stat-label">Average Index</span>
                                                 </div>
                                                 <div className="test-stat-card green">
                                                     <span className="stat-value">{testAnalytics.stats.distribution.doingWell}</span>
@@ -838,7 +844,7 @@ const Analytics = () => {
                                                 </div>
                                                 <div className="test-stat-card red">
                                                     <span className="stat-value">{testAnalytics.stats.distribution.needsAttention}</span>
-                                                    <span className="stat-label">Needs Attention</span>
+                                                    <span className="stat-label">Priority Support</span>
                                                 </div>
                                             </div>
 
@@ -850,8 +856,8 @@ const Analytics = () => {
                                                             <thead>
                                                                 <tr>
                                                                     <th>School</th>
-                                                                    <th>Submissions</th>
-                                                                    <th>Avg Score</th>
+                                                                    <th>Check-ins</th>
+                                                                    <th>Avg Index</th>
                                                                     <th>Distribution</th>
                                                                 </tr>
                                                             </thead>
@@ -905,7 +911,7 @@ const Analytics = () => {
                             {/* Trend Charts Section with Toggle */}
                             <div className="trend-section">
                                 <div className="trend-header">
-                                    <h2 className="section-title"><FontAwesomeIcon icon={faChartLine} /> Submission Trends</h2>
+                                    <h2 className="section-title"><FontAwesomeIcon icon={faChartLine} /> Activity Trends</h2>
                                     <div className="trend-toggle">
                                         <button
                                             className={`toggle-btn ${trendPeriod === 'weekly' ? 'active' : ''}`}
@@ -933,13 +939,13 @@ const Analytics = () => {
 
                             {schoolData.recentSubmissions?.length > 0 && (
                                 <>
-                                    <h2 className="section-title">Recent Submissions</h2>
+                                    <h2 className="section-title">Recent Check-ins</h2>
                                     <div className="recent-submissions-list">
                                         {schoolData.recentSubmissions.slice(0, 5).map((sub, i) => (
                                             <div key={i} className="recent-sub-item">
                                                 <span>{sub.studentName}</span>
                                                 <span>Class {sub.class}</span>
-                                                <span>Score: {sub.totalScore}</span>
+                                                <span>Index: {sub.totalScore}</span>
                                                 <span className={`bucket-badge ${sub.bucket}`}>{sub.bucket}</span>
                                             </div>
                                         ))}
@@ -963,7 +969,7 @@ const Analytics = () => {
                             <div className="charts-row">
                                 <DistributionDonut data={classData.overallDistribution} title="Class Distribution" />
                                 <div className="chart-card skill-breakdown">
-                                    <h3>Skill Area Breakdown</h3>
+                                    <h3>Focus Area Breakdown</h3>
                                     <div className="skill-mini-charts">
                                         {Object.entries(SKILL_AREAS).map(([key, area]) => (
                                             <div key={key} className="mini-skill">

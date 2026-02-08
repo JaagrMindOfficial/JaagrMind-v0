@@ -458,11 +458,11 @@ const SchoolManagement = () => {
                             </div>
                             <div className="school-stat">
                                 <span className="school-stat-value">{school.submissionCount || 0}</span>
-                                <span className="school-stat-label">Submissions</span>
+                                <span className="school-stat-label">Check-ins</span>
                             </div>
                             <div className="school-stat">
                                 <span className="school-stat-value">{school.assignedTests?.length || 0}</span>
-                                <span className="school-stat-label">Tests</span>
+                                <span className="school-stat-label">Assianed</span>
                             </div>
                         </div>
 
@@ -505,14 +505,14 @@ const SchoolManagement = () => {
                             <button
                                 className="action-btn"
                                 onClick={() => openTestsModal(school)}
-                                title="Manage Tests"
+                                title="Manage Check-ins"
                             >
                                 <FontAwesomeIcon icon={faClipboardList} />
                             </button>
                             <button
                                 className="action-btn analytics"
                                 onClick={() => openAnalyticsModal(school)}
-                                title="View Analytics"
+                                title="View Insights"
                             >
                                 <FontAwesomeIcon icon={faChartLine} />
                             </button>
@@ -724,7 +724,7 @@ const SchoolManagement = () => {
                                                     checked={formData.isDataVisibleToSchool}
                                                     onChange={(e) => setFormData({ ...formData, isDataVisibleToSchool: e.target.checked })}
                                                 />
-                                                <span>Allow school to view student analytics</span>
+                                                <span>Allow school to view student insights</span>
                                             </label>
                                         </div>
 
@@ -846,14 +846,14 @@ const SchoolManagement = () => {
                         >
                             <div className="modal-header">
                                 <h2 className="modal-title">
-                                    📋 Manage Tests - {managingSchool.name}
+                                    📋 Manage Check-ins - {managingSchool.name}
                                 </h2>
                                 <button className="modal-close" onClick={closeTestsModal}>×</button>
                             </div>
 
                             <div className="modal-body">
                                 <p className="text-muted" style={{ marginBottom: '1rem' }}>
-                                    Select which assessments should be available to this school.
+                                    Select which check-ins should be available to this school.
                                 </p>
 
                                 <div className="form-group">
@@ -863,7 +863,7 @@ const SchoolManagement = () => {
                                             checked={assignAll}
                                             onChange={(e) => handleAssignAll(e.target.checked)}
                                         />
-                                        <span><strong>Assign All Assessments</strong></span>
+                                        <span><strong>Assign All Check-ins</strong></span>
                                     </label>
                                 </div>
 
@@ -886,7 +886,7 @@ const SchoolManagement = () => {
                                                 </span>
                                             </label>
                                             <span className="test-question-count">
-                                                {assessment.questionCount || assessment.questions?.length || 0} questions
+                                                {assessment.questionCount || assessment.questions?.length || 0} items
                                             </span>
                                         </div>
                                     ))}
@@ -894,7 +894,7 @@ const SchoolManagement = () => {
 
                                 {assessments.length === 0 && (
                                     <div className="empty-state">
-                                        <p>No assessments available. Create assessments first.</p>
+                                        <p>No check-ins available. Create check-ins first.</p>
                                     </div>
                                 )}
                             </div>
@@ -936,7 +936,7 @@ const SchoolManagement = () => {
                         >
                             <div className="modal-header">
                                 <h2 className="modal-title">
-                                    📊 {analyticsSchool.name} - Student Analytics
+                                    📊 {analyticsSchool.name} - Student Insights
                                 </h2>
                                 <button className="modal-close" onClick={closeAnalyticsModal}>×</button>
                             </div>
@@ -981,7 +981,7 @@ const SchoolManagement = () => {
                                     onChange={(e) => handleAnalyticsFilterChange('assessmentId', e.target.value)}
                                     style={{ maxWidth: '200px' }}
                                 >
-                                    <option value="">All Assessments</option>
+                                    <option value="">All Check-ins</option>
                                     {analyticsData?.filters?.assessments?.map(a => (
                                         <option key={a._id} value={a._id}>{a.title}</option>
                                     ))}
@@ -1007,8 +1007,9 @@ const SchoolManagement = () => {
                                                     <th>Access ID</th>
                                                     <th>Class</th>
                                                     <th>Roll No</th>
-                                                    <th>Assessment</th>
-                                                    <th>Score</th>
+                                                    <th>Roll No</th>
+                                                    <th>Check-in</th>
+                                                    <th>Index</th>
                                                     <th>Status</th>
                                                     <th>Date</th>
                                                 </tr>
@@ -1043,7 +1044,7 @@ const SchoolManagement = () => {
                                                             <td><code className="access-id-code">{student.accessId}</code></td>
                                                             <td>{student.class} {student.section}</td>
                                                             <td>{student.rollNo || '-'}</td>
-                                                            <td colSpan="4" className="text-muted">No submissions yet</td>
+                                                            <td colSpan="4" className="text-muted">No check-ins yet</td>
                                                         </tr>
                                                     )
                                                 ))}

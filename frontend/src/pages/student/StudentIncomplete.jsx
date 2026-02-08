@@ -64,15 +64,15 @@ const StudentIncomplete = () => {
                     <FontAwesomeIcon icon={faPause} style={{ color: '#7C3AED', fontSize: '40px' }} />
                 </motion.div>
 
-                <h1>Assessment Paused</h1>
+                <h1>Check-in Paused</h1>
                 <p className="thankyou-subtitle">
-                    Your assessment was paused due to inactivity, but don't worry - your progress has been saved!
+                    Your check-in was paused due to inactivity, but don't worry - your progress has been saved!
                 </p>
 
                 <div className="thankyou-message">
                     <h3>What happens next?</h3>
                     <p>
-                        Please log out and log in again to resume your assessment from where you left off.
+                        Please log out and log in again to resume your check-in from where you left off.
                     </p>
                 </div>
 

@@ -579,7 +579,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                         whileHover={allMoodAnswered ? { scale: 1.02 } : {}}
                         whileTap={allMoodAnswered ? { scale: 0.98 } : {}}
                     >
-                        Start Assessment
+                        Start Check-in
                         <FontAwesomeIcon icon={faRocket} className="btn-icon" />
                     </motion.button>
                 </motion.div>
@@ -648,8 +648,8 @@ const StudentAssessment = ({ previewMode = false }) => {
                         <div className="no-tests-icon">
                             <FontAwesomeIcon icon={faClipboardList} />
                         </div>
-                        <h2>No Tests Available</h2>
-                        <p>You don't have any pending assessments.</p>
+                        <h2>No Check-ins Available</h2>
+                        <p>You don't have any pending check-ins.</p>
                         <button className="btn btn-secondary" onClick={() => { logout(); navigate('/student/login'); }}>
                             Logout
                         </button>
@@ -670,7 +670,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <h2>Welcome, {user?.name}!</h2>
-                    <p>Select an assessment to begin:</p>
+                    <p>Select a check-in to begin:</p>
 
                     <div className="test-list">
                         {tests.map((test, index) => (
@@ -688,7 +688,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                                     <FontAwesomeIcon icon={faClipboardList} />
                                 </span>
                                 <span className="test-title">{test.title}</span>
-                                <span className="test-meta">{test.questionCount} questions</span>
+                                <span className="test-meta">{test.questionCount} steps</span>
                             </motion.button>
                         ))}
                     </div>
@@ -702,7 +702,7 @@ const StudentAssessment = ({ previewMode = false }) => {
             <div className="assessment-container">
                 <div className="loading-card">
                     <div className="spinner large"></div>
-                    <p>Loading assessment...</p>
+                    <p>Loading...</p>
                 </div>
             </div>
         );
@@ -783,8 +783,8 @@ const StudentAssessment = ({ previewMode = false }) => {
                             transition={{ type: "spring", duration: 0.8 }}
                         >
                             <div className="level-up-ribbon">🎉</div>
-                            <h2>Level {currentLevel - 1} Complete!</h2>
-                            <p>Great job! Moving to Level {currentLevel}!</p>
+                            <h2>Part {currentLevel - 1} Complete!</h2>
+                            <p>Moving to Part {currentLevel}...</p>
                             <div className="level-up-stars">⭐⭐⭐</div>
                         </motion.div>
                     </motion.div>
@@ -808,7 +808,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                         >
                             <div className="inactivity-icon">⚠️</div>
                             <h3>Are you still there?</h3>
-                            <p>Please select an option to continue, or the assessment may end.</p>
+                            <p>Please select an option to continue, or the check-in may close.</p>
                             <button
                                 className="btn btn-primary"
                                 onClick={() => { setShowInactivityAlert(false); setCurrentInactivityTime(0); }}
@@ -830,12 +830,12 @@ const StudentAssessment = ({ previewMode = false }) => {
                 <div className="assessment-header">
                     <div className="header-left">
                         <span className="level-badge" style={{ background: sectionColors[currentSection % sectionColors.length] }}>
-                            <FontAwesomeIcon icon={sectionIcons[currentSection % sectionIcons.length]} /> Level {currentLevel}
+                            <FontAwesomeIcon icon={sectionIcons[currentSection % sectionIcons.length]} /> Part {currentLevel}
                         </span>
                     </div>
                     <div className="header-center">
                         <div className="progress-info">
-                            Question {currentQuestion + 1} of {assessment.questions.length}
+                            Item {currentQuestion + 1} of {assessment.questions.length}
                         </div>
                     </div>
                     <div className="header-right">
@@ -876,7 +876,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                         exit={{ opacity: 0, x: -50 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <div className="floating-question-number">Q{currentQuestion + 1}</div>
+                        <div className="floating-question-number">#{currentQuestion + 1}</div>
                         <h3 className="question-text">
                             {assessment.questions[currentQuestion].text}
                         </h3>
@@ -960,7 +960,7 @@ const StudentAssessment = ({ previewMode = false }) => {
                         {submitting ? (
                             <span className="btn-spinner"></span>
                         ) : currentQuestion === assessment.questions.length - 1 ? (
-                            previewMode ? 'Close Preview' : 'Submit ✓'
+                            previewMode ? 'Close Preview' : 'Finish ✓'
                         ) : (
                             'Next →'
                         )}

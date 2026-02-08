@@ -23,8 +23,8 @@ import './Sidebar.css';
 const adminMenuItems = [
     { path: '/admin', icon: faHouse, label: 'Dashboard', exact: true },
     { path: '/admin/schools', icon: faSchool, label: 'Schools' },
-    { path: '/admin/assessments', icon: faClipboardList, label: 'Assessments' },
-    { path: '/admin/analytics', icon: faChartLine, label: 'Reports' },
+    { path: '/admin/assessments', icon: faClipboardList, label: 'Check-ins' },
+    { path: '/admin/analytics', icon: faChartLine, label: 'Insights' },
     { path: '/admin/tickets', icon: faHeadset, label: 'Support Tickets' },
     { path: '/admin/admins', icon: faUserShield, label: 'Admin Management' },
 ];
@@ -32,8 +32,8 @@ const adminMenuItems = [
 const schoolMenuItems = [
     { path: '/school', icon: faHouse, label: 'Dashboard', exact: true },
     { path: '/school/students', icon: faUserGraduate, label: 'Students' },
-    { path: '/school/tests', icon: faFileLines, label: 'Tests' },
-    { path: '/school/analytics', icon: faChartLine, label: 'Analytics' },
+    { path: '/school/tests', icon: faFileLines, label: 'Check-ins' },
+    { path: '/school/analytics', icon: faChartLine, label: 'Insights' },
     { path: '/school/support', icon: faHeadset, label: 'Support' },
 ];
 

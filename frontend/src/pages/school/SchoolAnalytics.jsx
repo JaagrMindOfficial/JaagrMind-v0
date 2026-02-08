@@ -98,9 +98,9 @@ const SchoolAnalytics = () => {
             setError(null);
         } catch (error) {
             if (error.response?.status === 403) {
-                setError('Analytics not available for your school. Please contact admin.');
+                setError('Insights not available for your school. Please contact admin.');
             } else {
-                setError('Error loading analytics');
+                setError('Error loading insights');
             }
         } finally {
             setLoading(false);
@@ -198,7 +198,7 @@ const SchoolAnalytics = () => {
 
     if (loading && !data) {
         return (
-            <Layout title="Analytics">
+            <Layout title="Insights">
                 <div className="loading-container">
                     <div className="spinner"></div>
                 </div>
@@ -208,7 +208,7 @@ const SchoolAnalytics = () => {
 
     if (error) {
         return (
-            <Layout title="Analytics">
+            <Layout title="Insights">
                 <motion.div
                     className="card text-center"
                     initial={{ opacity: 0, y: 20 }}
@@ -216,7 +216,7 @@ const SchoolAnalytics = () => {
                     style={{ padding: '60px 24px' }}
                 >
                     <div style={{ fontSize: '4rem', marginBottom: '16px', opacity: 0.5 }}>🔒</div>
-                    <h3 style={{ marginBottom: '8px' }}>Analytics Restricted</h3>
+                    <h3 style={{ marginBottom: '8px' }}>Insights Restricted</h3>
                     <p className="text-muted">{error}</p>
                 </motion.div>
             </Layout>
@@ -234,7 +234,7 @@ const SchoolAnalytics = () => {
     const skillAreaData = getSkillAreaData();
 
     return (
-        <Layout title="School Analytics" subtitle="Student skill assessment insights">
+        <Layout title="School Insights" subtitle="Student skill check-in insights">
             {/* Tabs */}
             <div className="analytics-tabs" style={{ marginBottom: '24px' }}>
                 <button
@@ -311,7 +311,7 @@ const SchoolAnalytics = () => {
                                 <FontAwesomeIcon icon={faClipboardCheck} />
                             </div>
                             <div className="stat-value">{data?.totalSubmissions || 0}</div>
-                            <div className="stat-label">Total Assessments</div>
+                            <div className="stat-label">Total Check-ins</div>
                         </motion.div>
 
                         <motion.div
@@ -324,7 +324,7 @@ const SchoolAnalytics = () => {
                                 <FontAwesomeIcon icon={faChartLine} />
                             </div>
                             <div className="stat-value">{data?.avgScore || 0}</div>
-                            <div className="stat-label">Avg Skill Score</div>
+                            <div className="stat-label">Avg Skill Index</div>
                         </motion.div>
 
                         <motion.div
@@ -391,7 +391,7 @@ const SchoolAnalytics = () => {
                                 </ResponsiveContainer>
                             ) : (
                                 <div className="empty-state">
-                                    <p>No assessment data available yet</p>
+                                    <p>No check-in data available yet</p>
                                 </div>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '16px', flexWrap: 'wrap' }}>
@@ -423,13 +423,15 @@ const SchoolAnalytics = () => {
                             </h3>
                             {skillAreaData.length > 0 && skillAreaData.some(s => s.score > 0) ? (
                                 <ResponsiveContainer width="100%" height={280}>
-                                    <BarChart data={skillAreaData} layout="vertical">
+                                    <BarChart data={skillAreaData} layout="vertical" barSize={20}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" horizontal={true} vertical={false} />
                                         <XAxis type="number" domain={[0, 32]} tick={{ fontSize: 11 }} />
                                         <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
                                         <Tooltip
-                                            formatter={(value, name, props) => [`Score: ${value}`, props.payload.fullName]}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                            cursor={{ fill: 'transparent' }}
+                                            formatter={(value, name, props) => [`Index: ${value}`, props.payload.fullName]}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(255,255,255,0.95)', color: '#1f2937' }}
+                                            itemStyle={{ color: '#1f2937' }}
                                         />
                                         <Bar dataKey="score" radius={[0, 8, 8, 0]}>
                                             {skillAreaData.map((entry, index) => (
@@ -444,7 +446,7 @@ const SchoolAnalytics = () => {
                                 </div>
                             )}
                             <p className="text-muted text-center" style={{ fontSize: '0.8rem', marginTop: '12px' }}>
-                                Lower scores = stronger skills (8-14: Stable, 15-22: Emerging, 23-32: Needs Support)
+                                Lower index = stronger skills (8-14: Stable, 15-22: Emerging, 23-32: Needs Support)
                             </p>
                         </motion.div>
                     </div>
@@ -458,7 +460,7 @@ const SchoolAnalytics = () => {
                     >
                         <h3 className="card-title mb-4">
                             <FontAwesomeIcon icon={faUserGraduate} style={{ marginRight: '8px', color: 'var(--primary-purple)' }} />
-                            Recent Assessments
+                            Recent Check-ins
                         </h3>
                         {data?.recentSubmissions?.length > 0 ? (
                             <div className="table-container">
@@ -467,7 +469,7 @@ const SchoolAnalytics = () => {
                                         <tr>
                                             <th>Student</th>
                                             <th>Class</th>
-                                            <th>Score</th>
+                                            <th>Index</th>
                                             <th>Focus</th>
                                             <th>Self-Esteem</th>
                                             <th>Social</th>
@@ -509,7 +511,7 @@ const SchoolAnalytics = () => {
                             </div>
                         ) : (
                             <div className="empty-state">
-                                <p>No assessments completed yet</p>
+                                <p>No check-ins completed yet</p>
                             </div>
                         )}
                     </motion.div>
@@ -555,7 +557,7 @@ const SchoolAnalytics = () => {
                                         </div>
                                         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
                                             <div style={{ fontSize: '2rem', fontWeight: 700, color: skill.color }}>{score}</div>
-                                            <div className="text-muted" style={{ fontSize: '0.8rem' }}>Avg Score</div>
+                                            <div className="text-muted" style={{ fontSize: '0.8rem' }}>Avg Index</div>
                                         </div>
                                     </div>
 
@@ -596,8 +598,10 @@ const SchoolAnalytics = () => {
                                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                                 <YAxis domain={[0, 32]} />
                                 <Tooltip
-                                    formatter={(value) => [`${value}`, 'Avg Score']}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    cursor={{ fill: 'transparent' }}
+                                    formatter={(value) => [`${value}`, 'Avg Index']}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(255,255,255,0.95)', color: '#1f2937' }}
+                                    itemStyle={{ color: '#1f2937' }}
                                 />
                                 <Bar dataKey="score" radius={[8, 8, 0, 0]}>
                                     {skillAreaData.map((entry, index) => (
@@ -664,7 +668,7 @@ const SchoolAnalytics = () => {
                             onChange={(e) => handleStudentFilterChange('assessmentId', e.target.value)}
                             style={{ maxWidth: '200px' }}
                         >
-                            <option value="">All Assessments</option>
+                            <option value="">All Check-ins</option>
                             {studentsData?.filters?.assessments?.map(a => (
                                 <option key={a._id} value={a._id}>{a.title}</option>
                             ))}
@@ -685,8 +689,8 @@ const SchoolAnalytics = () => {
                                         <th>Access ID</th>
                                         <th>Class</th>
                                         <th>Roll No</th>
-                                        <th>Assessment</th>
-                                        <th>Score</th>
+                                        <th>Check-in</th>
+                                        <th>Index</th>
                                         <th>Status</th>
                                         <th>Date</th>
                                     </tr>
@@ -751,7 +755,7 @@ const SchoolAnalytics = () => {
                                                 <td><code style={{ fontSize: '0.8rem' }}>{student.accessId}</code></td>
                                                 <td>{student.class} {student.section}</td>
                                                 <td>{student.rollNo || '-'}</td>
-                                                <td colSpan="4" className="text-muted">No assessments completed</td>
+                                                <td colSpan="4" className="text-muted">No check-ins completed</td>
                                             </tr>
                                         )
                                     ))}
@@ -828,7 +832,7 @@ const SchoolAnalytics = () => {
                                             <div>
                                                 <div className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
                                                     <FontAwesomeIcon icon={faClipboardCheck} style={{ marginRight: '6px' }} />
-                                                    Total Assessments
+                                                    Total Check-ins
                                                 </div>
                                                 <div style={{ fontWeight: 600, color: 'var(--primary-purple)' }}>{studentDetail.totalSubmissions}</div>
                                             </div>
@@ -924,7 +928,7 @@ const SchoolAnalytics = () => {
                                                         {/* Question-wise Answers */}
                                                         <h4 style={{ marginBottom: '16px', color: 'var(--primary-purple)' }}>
                                                             <FontAwesomeIcon icon={faClipboardCheck} style={{ marginRight: '8px' }} />
-                                                            Question-wise Responses
+                                                            Item-wise Responses
                                                         </h4>
                                                         {Object.entries(submission.answersBySection || {}).map(([sectionKey, sectionData]) => (
                                                             <div key={sectionKey} style={{ marginBottom: '20px' }}>
@@ -938,7 +942,7 @@ const SchoolAnalytics = () => {
                                                                     justifyContent: 'space-between'
                                                                 }}>
                                                                     <span>{sectionData.sectionName}</span>
-                                                                    <span>Score: {sectionData.totalScore}</span>
+                                                                    <span>Index: {sectionData.totalScore}</span>
                                                                 </div>
                                                                 <div style={{ border: '1px solid var(--border-color)', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
                                                                     {sectionData.answers.map((answer, aIdx) => (
@@ -960,7 +964,7 @@ const SchoolAnalytics = () => {
                                                                                 fontWeight: 600,
                                                                                 fontSize: '0.8rem'
                                                                             }}>
-                                                                                Q{answer.questionIndex}
+                                                                                # {answer.questionIndex}
                                                                             </span>
                                                                             <div style={{ flex: 1 }}>
                                                                                 <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
@@ -1032,7 +1036,7 @@ const SchoolAnalytics = () => {
                                         ))
                                     ) : (
                                         <div className="empty-state">
-                                            <p>No assessments completed by this student</p>
+                                            <p>No check-ins completed by this student</p>
                                         </div>
                                     )}
                                 </>

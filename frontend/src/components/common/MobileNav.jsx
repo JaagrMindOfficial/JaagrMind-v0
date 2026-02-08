@@ -20,14 +20,14 @@ const MobileNav = () => {
     const adminNavItems = [
         { path: '/admin', icon: faHouse, label: 'Home', exact: true },
         { path: '/admin/schools', icon: faSchool, label: 'Schools' },
-        { path: '/admin/analytics', icon: faChartLine, label: 'Analytics' },
+        { path: '/admin/analytics', icon: faChartLine, label: 'Insights' },
         { path: '/settings', icon: faGear, label: 'Settings' },
     ];
 
     const schoolNavItems = [
         { path: '/school', icon: faHouse, label: 'Home', exact: true },
         { path: '/school/students', icon: faUserGraduate, label: 'Students' },
-        { path: '/school/analytics', icon: faChartLine, label: 'Analytics' },
+        { path: '/school/analytics', icon: faChartLine, label: 'Insights' },
         { path: '/settings', icon: faGear, label: 'Settings' },
     ];
 

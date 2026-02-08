@@ -102,7 +102,7 @@ const SchoolDashboard = () => {
                 >
                     <div className="stat-icon"><FontAwesomeIcon icon={faCheckCircle} /></div>
                     <div className="stat-value">{data?.stats?.completedTests || 0}</div>
-                    <div className="stat-label">Tests Completed</div>
+                    <div className="stat-label">Check-ins Completed</div>
                 </motion.div>
 
                 <motion.div
@@ -113,7 +113,7 @@ const SchoolDashboard = () => {
                 >
                     <div className="stat-icon"><FontAwesomeIcon icon={faClock} /></div>
                     <div className="stat-value">{data?.stats?.pendingTests || 0}</div>
-                    <div className="stat-label">Pending Tests</div>
+                    <div className="stat-label">Pending Check-ins</div>
                 </motion.div>
             </div>
 
@@ -124,7 +124,7 @@ const SchoolDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
             >
-                <h3>Assessment Completion</h3>
+                <h3>Check-in Completion</h3>
                 <div className="completion-progress">
                     <div className="progress-bar large">
                         <motion.div
@@ -137,7 +137,7 @@ const SchoolDashboard = () => {
                     <span className="completion-percentage">{completionPercentage}%</span>
                 </div>
                 <p className="completion-text">
-                    {data?.stats?.completedTests || 0} of {data?.stats?.totalStudents || 0} students have completed the assessment
+                    {data?.stats?.completedTests || 0} of {data?.stats?.totalStudents || 0} students have completed the check-in
                 </p>
             </motion.div>
 
@@ -160,7 +160,7 @@ const SchoolDashboard = () => {
                     </a>
                     <a href="/school/tests" className="action-card">
                         <span className="action-icon"><FontAwesomeIcon icon={faLink} /></span>
-                        <span className="action-text">Get Test Link</span>
+                        <span className="action-text">Get Check-in Link</span>
                     </a>
                     <a href="/school/students" className="action-card">
                         <span className="action-icon"><FontAwesomeIcon icon={faFileExport} /></span>

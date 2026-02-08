@@ -60,8 +60,8 @@ const LandingPage = () => {
     const features = [
         {
             icon: faBrain,
-            title: 'AI-Powered Assessments',
-            description: 'Smart wellness assessments that adapt to each student\'s responses for accurate insights.'
+            title: 'AI-Powered Check-ins',
+            description: 'Smart wellness check-ins that adapt to each student\'s responses for accurate insights.'
         },
         {
             icon: faSchool,
@@ -125,10 +125,10 @@ const LandingPage = () => {
                     >
                         <FontAwesomeIcon icon={faStar} /> Trusted by 50+ Schools
                     </motion.span>
-                    <h1>Empowering Student <span className="gradient-text">Mental Wellness</span></h1>
+                    <h1>Empowering Student <span className="gradient-text">Emotional Well-being</span></h1>
                     <p className="hero-subtitle">
-                        A comprehensive SaaS platform for schools to assess, monitor, and support
-                        student mental wellness through engaging, gamified assessments.
+                        A comprehensive SaaS platform for schools to support, monitor, and encourage
+                        student emotional well-being through engaging, gamified check-ins.
                     </p>
                     <div className="hero-cta">
                         <Link to="/login" className="btn btn-primary btn-lg">
@@ -174,34 +174,98 @@ const LandingPage = () => {
                     >
                         <span className="section-badge">Features</span>
                         <h2>Why Choose <span className="gradient-text">JaagrMind</span>?</h2>
-                        <p>Our platform provides everything you need to support student mental wellness</p>
+                        <p>Our platform provides everything you need to support student emotional well-being</p>
                     </motion.div>
 
                     <div className="features-grid">
-                        {features.map((feature, index) => (
-                            <motion.div
-                                key={index}
-                                className="feature-card glass-panel"
-                                initial={{ opacity: 0, scale: 0.9, y: 50 }}
-                                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                                viewport={{ once: false, margin: "-50px" }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
-                                whileHover={{
-                                    scale: 1.05,
-                                    rotate: [0, -2, 2, -2, 0],
-                                    transition: { duration: 0.3 }
-                                }}
-                                onHoverStart={() => {
-                                    if (navigator.vibrate) navigator.vibrate(50);
-                                }}
-                            >
-                                <div className="feature-icon">
-                                    <FontAwesomeIcon icon={feature.icon} />
-                                </div>
-                                <h3>{feature.title}</h3>
-                                <p>{feature.description}</p>
-                            </motion.div>
-                        ))}
+                        <motion.div
+                            key={0}
+                            className="feature-card glass-panel"
+                            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                            viewport={{ once: false, margin: "-50px" }}
+                            transition={{ duration: 0.5, delay: 0 }}
+                            whileHover={{
+                                scale: 1.05,
+                                rotate: [0, -2, 2, -2, 0],
+                                transition: { duration: 0.3 }
+                            }}
+                            onHoverStart={() => {
+                                if (navigator.vibrate) navigator.vibrate(50);
+                            }}
+                        >
+                            <div className="feature-icon">
+                                <FontAwesomeIcon icon={faBrain} />
+                            </div>
+                            <h3>AI-Powered Check-ins</h3>
+                            <p>Smart wellness check-ins that adapt to each student's responses for accurate insights.</p>
+                        </motion.div>
+                        <motion.div
+                            key={1}
+                            className="feature-card glass-panel"
+                            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                            viewport={{ once: false, margin: "-50px" }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                            whileHover={{
+                                scale: 1.05,
+                                rotate: [0, -2, 2, -2, 0],
+                                transition: { duration: 0.3 }
+                            }}
+                            onHoverStart={() => {
+                                if (navigator.vibrate) navigator.vibrate(50);
+                            }}
+                        >
+                            <div className="feature-icon">
+                                <FontAwesomeIcon icon={faSchool} />
+                            </div>
+                            <h3>Multi-School Support</h3>
+                            <p>Support multiple schools from a single dashboard with comprehensive analytics.</p>
+                        </motion.div>
+                        <motion.div
+                            key={2}
+                            className="feature-card glass-panel"
+                            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                            viewport={{ once: false, margin: "-50px" }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            whileHover={{
+                                scale: 1.05,
+                                rotate: [0, -2, 2, -2, 0],
+                                transition: { duration: 0.3 }
+                            }}
+                            onHoverStart={() => {
+                                if (navigator.vibrate) navigator.vibrate(50);
+                            }}
+                        >
+                            <div className="feature-icon">
+                                <FontAwesomeIcon icon={faChartLine} />
+                            </div>
+                            <h3>Real-Time Insights</h3>
+                            <p>Visualize student wellness trends with beautiful, actionable visualizations.</p>
+                        </motion.div>
+                        <motion.div
+                            key={3}
+                            className="feature-card glass-panel"
+                            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                            viewport={{ once: false, margin: "-50px" }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            whileHover={{
+                                scale: 1.05,
+                                rotate: [0, -2, 2, -2, 0],
+                                transition: { duration: 0.3 }
+                            }}
+                            onHoverStart={() => {
+                                if (navigator.vibrate) navigator.vibrate(50);
+                            }}
+                        >
+                            <div className="feature-icon">
+                                <FontAwesomeIcon icon={faShieldAlt} />
+                            </div>
+                            <h3>Privacy First</h3>
+                            <p>Enterprise-grade security ensuring student data remains protected and confidential.</p>
+                        </motion.div>
                     </div>
                 </div>
             </section>
@@ -220,13 +284,13 @@ const LandingPage = () => {
                             <span className="section-badge">Our Mission</span>
                             <h2>Building a <span className="gradient-text">Healthier Future</span></h2>
                             <p>
-                                At JaagrMind, we believe every student deserves access to mental wellness support.
+                                At JaagrMind, we believe every student deserves access to emotional well-being support.
                                 Our mission is to empower schools with the tools they need to identify, understand,
                                 and support students' emotional well-being.
                             </p>
                             <p>
-                                Through innovative technology and research-backed assessments, we're creating a
-                                world where mental health is prioritized alongside academic success.
+                                Through innovative technology and research-backed check-ins, we're creating a
+                                world where emotional well-being is prioritized alongside academic success.
                             </p>
                             <div className="about-values">
                                 <motion.div
@@ -265,7 +329,7 @@ const LandingPage = () => {
                         >
                             <div className="visual-card">
                                 <div className="visual-icon">🧠</div>
-                                <h3>Mental Wellness</h3>
+                                <h3>Emotional Well-being</h3>
                                 <p>Supporting the whole student</p>
                             </div>
                         </motion.div>
@@ -284,7 +348,7 @@ const LandingPage = () => {
                     >
                         <span className="section-badge">Get in Touch</span>
                         <h2>Contact <span className="gradient-text">Us</span></h2>
-                        <p>Ready to transform student wellness at your school? Reach out to us!</p>
+                        <p>Ready to transform student well-being at your school? Reach out to us!</p>
                     </motion.div>
 
                     <div className="contact-grid">
@@ -399,7 +463,8 @@ const LandingPage = () => {
                 <div className="footer-container">
                     <div className="footer-brand">
                         <img src={logoImg} alt="JaagrMind" />
-                        <p>Empowering schools to support student mental wellness through innovative technology.</p>
+                        <p>Empowering schools to support student emotional well-being through innovative technology.</p>
+
                     </div>
                     <div className="footer-links">
                         <div className="footer-col">

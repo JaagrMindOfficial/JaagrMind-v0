@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { faMoon, faSun, faHome } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Background3D from '../components/common/Background3D';
@@ -99,11 +99,19 @@ const Login = () => {
                     <FontAwesomeIcon icon={theme === 'light' ? faMoon : faSun} />
                 </button>
 
+                <button
+                    className="login-home-btn"
+                    onClick={() => navigate('/')}
+                    aria-label="Go to Home"
+                >
+                    <FontAwesomeIcon icon={faHome} />
+                </button>
+
                 <div className="login-logo">
                     <img src={logoImg} alt="JaagrMind" className="login-logo-img" />
                 </div>
 
-                <p className="login-subtitle">Student Mental Wellness Platform</p>
+                <p className="login-subtitle">Student Emotional Well-being Platform</p>
 
                 {error && (
                     <motion.div
@@ -161,7 +169,7 @@ const Login = () => {
 
                 <div className="login-footer">
                     <p>
-                        <strong>Students:</strong> Please use the test link provided by your school.
+                        <strong>Students:</strong> Please use the check-in link provided by your school.
                     </p>
                 </div>
             </motion.div>
