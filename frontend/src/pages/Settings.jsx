@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faBuilding, faEnvelope, faShieldHalved, faKey, faSave, faPen, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faBuilding, faEnvelope, faShieldHalved, faKey, faSave, faPen, faEye, faEyeSlash, faPhone, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
+import { Country, State, City } from 'country-state-city';
 import Layout from '../components/common/Layout';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -9,27 +11,43 @@ import './Settings.css';
 
 const Settings = () => {
     const { user, updateUser } = useAuth();
-    const [isEditingProfile, setIsEditingProfile] = useState(false);
-    const [profile, setProfile] = useState({
-        name: user?.name || '',
-        email: user?.email || ''
-    });
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
+
+    // Password State
     const [passwords, setPasswords] = useState({
         current: '',
         new: '',
         confirm: ''
     });
-    const [loading, setLoading] = useState(false);
-    const [profileLoading, setProfileLoading] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
-    const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
     const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
+    // Profile State
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
+    const [profile, setProfile] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: ''
+    });
+
     useEffect(() => {
-        setProfile({
-            name: user?.name || '',
-            email: user?.email || ''
-        });
+        if (user) {
+            setProfile({
+                name: user.name || '',
+                email: user.email || '',
+                phone: user.phone || user.contact?.phone || '',
+                address: user.address?.street || (typeof user.address === 'string' ? user.address : '') || '',
+                city: user.address?.city || '',
+                state: user.address?.state || '',
+                pincode: user.address?.pincode || ''
+            });
+        }
     }, [user]);
 
     const handlePasswordChange = (e) => {
@@ -76,17 +94,38 @@ const Settings = () => {
         e.preventDefault();
         setProfileLoading(true);
         try {
-            const response = await api.put('/api/admin/profile', {
-                name: profile.name,
-                email: profile.email
-            });
+            const endpoint = user.role === 'admin'
+                ? '/api/admin/profile'
+                : '/api/school/profile';
+
+            const payload = user.role === 'admin'
+                ? { name: profile.name, email: profile.email }
+                : {
+                    name: profile.name,
+                    email: profile.email,
+                    phone: profile.phone,
+                    address: {
+                        street: profile.address,
+                        city: profile.city,
+                        state: profile.state,
+                        pincode: profile.pincode
+                    }
+                };
+
+            const response = await api.put(endpoint, payload);
 
             // Update user context if available
             if (updateUser) {
+                // For school, the response structure might be nested in `school` object or flat
+                // Adjust based on the actual API response from previous step
+                const updatedData = response.data.school || response.data;
+
                 updateUser({
                     ...user,
-                    name: response.data.name,
-                    email: response.data.email
+                    name: updatedData.name,
+                    email: updatedData.email,
+                    phone: updatedData.contact?.phone || updatedData.phone,
+                    address: updatedData.address
                 });
             }
 
@@ -106,7 +145,12 @@ const Settings = () => {
     const cancelProfileEdit = () => {
         setProfile({
             name: user?.name || '',
-            email: user?.email || ''
+            email: user?.email || '',
+            phone: user?.phone || user?.contact?.phone || '',
+            address: user?.address?.street || (typeof user?.address === 'string' ? user?.address : '') || '',
+            city: user?.address?.city || '',
+            state: user?.address?.state || '',
+            pincode: user?.address?.pincode || ''
         });
         setIsEditingProfile(false);
         setProfileMessage({ type: '', text: '' });
@@ -124,7 +168,7 @@ const Settings = () => {
                     <div className="card-header">
                         <h2>
                             <FontAwesomeIcon icon={faUser} /> Profile Information
-                            {user?.role === 'admin' && !isEditingProfile && (
+                            {!isEditingProfile && (
                                 <button
                                     className="btn btn-ghost btn-sm edit-profile-btn"
                                     onClick={() => setIsEditingProfile(true)}
@@ -137,12 +181,12 @@ const Settings = () => {
                     </div>
 
                     {profileMessage.text && (
-                        <div className={`profile-message message-alert ${profileMessage.type}`}>
+                        <div className={`profile - message message - alert ${profileMessage.type} `}>
                             {profileMessage.text}
                         </div>
                     )}
 
-                    {isEditingProfile && user?.role === 'admin' ? (
+                    {isEditingProfile ? (
                         <form onSubmit={handleProfileSubmit} className="profile-edit-form">
                             <div className="form-group">
                                 <label>Name</label>
@@ -152,7 +196,8 @@ const Settings = () => {
                                     value={profile.name}
                                     onChange={handleProfileChange}
                                     className="form-input"
-                                    placeholder="Enter your name"
+                                    placeholder="Enter name"
+                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -164,9 +209,80 @@ const Settings = () => {
                                     onChange={handleProfileChange}
                                     required
                                     className="form-input"
-                                    placeholder="Enter your email"
+                                    placeholder="Enter email"
                                 />
                             </div>
+
+                            {user?.role === 'school' && (
+                                <>
+                                    <div className="form-group">
+                                        <label>Phone</label>
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            value={profile.phone}
+                                            onChange={handleProfileChange}
+                                            className="form-input"
+                                            placeholder="Enter phone number"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>State & City</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                            <select
+                                                name="state"
+                                                value={profile.state}
+                                                onChange={(e) => {
+                                                    handleProfileChange(e);
+                                                    setProfile(prev => ({ ...prev, city: '' }));
+                                                }}
+                                                className="form-input"
+                                            >
+                                                <option value="">Select State</option>
+                                                {State.getStatesOfCountry('IN').map((state) => (
+                                                    <option key={state.isoCode} value={state.isoCode}>{state.name}</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                name="city"
+                                                value={profile.city}
+                                                onChange={handleProfileChange}
+                                                className="form-input"
+                                                disabled={!profile.state}
+                                            >
+                                                <option value="">Select City</option>
+                                                {profile.state && City.getCitiesOfState('IN', profile.state).map((city) => (
+                                                    <option key={city.name} value={city.name}>{city.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Pincode</label>
+                                        <input
+                                            type="text"
+                                            name="pincode"
+                                            value={profile.pincode}
+                                            onChange={handleProfileChange}
+                                            className="form-input"
+                                            placeholder="Pincode"
+                                            maxLength="6"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Street Address</label>
+                                        <textarea
+                                            name="address"
+                                            value={profile.address}
+                                            onChange={handleProfileChange}
+                                            className="form-input"
+                                            placeholder="Street, Building, Area..."
+                                            rows="2"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
                             <div className="form-actions profile-actions">
                                 <button
                                     type="button"
@@ -195,6 +311,64 @@ const Settings = () => {
                                 </span>
                                 <span className="profile-value">{user?.name || user?.schoolId}</span>
                             </div>
+
+                            {user?.role === 'school' && (
+                                <>
+                                    <div className="profile-item">
+                                        <span className="profile-label">
+                                            <FontAwesomeIcon icon={faShieldHalved} /> School Type
+                                        </span>
+                                        <span className="profile-value badge">
+                                            {user?.type === 'sub' ? 'Branch School' : 'Super School'}
+                                        </span>
+                                    </div>
+
+                                    {user?.type === 'sub' && user?.parentId && (
+                                        <div className="profile-item">
+                                            <span className="profile-label">
+                                                <FontAwesomeIcon icon={faBuilding} /> Main Campus
+                                            </span>
+                                            <span className="profile-value">
+                                                {user.parentId.name} ({user.parentId.schoolId})
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Phone Display */}
+                                    {(user?.phone || user?.contact?.phone) && (
+                                        <div className="profile-item">
+                                            <span className="profile-label">
+                                                <FontAwesomeIcon icon={faPhone} /> Phone
+                                            </span>
+                                            <span className="profile-value">
+                                                {user?.phone || user?.contact?.phone}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {user?.address && (
+                                        <div className="profile-item">
+                                            <span className="profile-label">
+                                                <FontAwesomeIcon icon={faMapMarkerAlt} /> Address
+                                            </span>
+                                            <span className="profile-value">
+                                                {typeof user.address === 'string' ? (
+                                                    user.address
+                                                ) : (
+                                                    <>
+                                                        {user.address.street && <div>{user.address.street}</div>}
+                                                        <div>
+                                                            {user.address.city && <span>{user.address.city}{user.address.state ? ', ' : ''}</span>}
+                                                            {user.address.state && <span>{user.address.state}</span>}
+                                                            {user.address.pincode && <span> - {user.address.pincode}</span>}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
                             <div className="profile-item">
                                 <span className="profile-label">
@@ -296,7 +470,7 @@ const Settings = () => {
                         </div>
 
                         {message.text && (
-                            <div className={`message-alert ${message.type}`}>
+                            <div className={`message - alert ${message.type} `}>
                                 {message.text}
                             </div>
                         )}

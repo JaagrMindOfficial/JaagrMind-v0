@@ -15,6 +15,7 @@ import SchoolDashboard from './pages/school/SchoolDashboard';
 import StudentManagement from './pages/school/StudentManagement';
 import SchoolTests from './pages/school/SchoolTests';
 import SchoolAnalytics from './pages/school/SchoolAnalytics';
+import SchoolBranches from './pages/school/SchoolBranches';
 import SchoolSupport from './pages/school/SchoolSupport';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentAssessment from './pages/student/StudentAssessment';
@@ -126,6 +127,11 @@ function App() {
             <Route path="/school/analytics" element={
                 <ProtectedRoute allowedRoles={['school']}>
                     <SchoolAnalytics />
+                </ProtectedRoute>
+            } />
+            <Route path="/school/branches" element={
+                <ProtectedRoute allowedRoles={['school']}>
+                    <SchoolBranches />
                 </ProtectedRoute>
             } />
             <Route path="/school/support" element={

@@ -29,12 +29,99 @@
     gap: 16px;
 }
 
+/* Branch Card Styling */
+.branch-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-top: 8px;
+    margin-left: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.branch-card::before {
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: -20px;
+    bottom: 50%;
+    width: 2px;
+    background: #e2e8f0;
+    border-bottom-left-radius: 4px;
+}
+
+.branch-card::after {
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: 50%;
+    width: 12px;
+    height: 2px;
+    background: #e2e8f0;
+}
+
+.school-branches-container {
+    padding-bottom: 12px;
+    position: relative;
+}
+
+.branch-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+}
+
+.branch-info small {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.branch-stats {
+    font-size: 0.75rem;
+    color: var(--primary-purple);
+    font-weight: 500;
+}
+
+.branch-count-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #ede9fe;
+    color: var(--primary-purple);
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.2s;
+}
+
+.branch-count-badge:hover {
+    background: #ddd6fe;
+}
+
+.school-address-sm {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Base Card Styles */
 .school-card {
     background: var(--primary-white);
     border-radius: var(--radius-lg);
     padding: 16px;
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-normal);
+    position: relative;
+    z-index: 1;
 }
 
 .school-card:hover {

@@ -79,6 +79,12 @@ const studentSchema = new mongoose.Schema({
         ref: 'School',
         required: true
     },
+    parentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        default: null,
+        index: true
+    },
     mobileNumber: {
         type: String,
         trim: true,

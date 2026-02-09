@@ -26,8 +26,21 @@ const schoolSchema = new mongoose.Schema({
         default: ''
     },
     address: {
+        street: { type: String, trim: true },
+        city: { type: String, trim: true },
+        state: { type: String, trim: true },
+        pincode: { type: String, trim: true },
+        full: { type: String, trim: true } // For legacy or formatted address
+    },
+    type: {
         type: String,
-        trim: true
+        enum: ['super', 'sub'],
+        default: 'super'
+    },
+    parentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        default: null
     },
     contact: {
         phone: {
@@ -80,6 +93,17 @@ const schoolSchema = new mongoose.Schema({
         default: true
     }
 });
+
+// Virtual for branches
+schoolSchema.virtual('branches', {
+    ref: 'School',
+    localField: '_id',
+    foreignField: 'parentId'
+});
+
+// Ensure virtuals are included in toJSON/toObject
+schoolSchema.set('toJSON', { virtuals: true });
+schoolSchema.set('toObject', { virtuals: true });
 
 // Hash password before saving
 schoolSchema.pre('save', async function (next) {

@@ -11,10 +11,11 @@ const StudentManagement = () => {
     const toast = useToast();
     const [students, setStudents] = useState([]);
     const [classes, setClasses] = useState([]);
+    const [branches, setBranches] = useState([]); // Branches state
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
-    const [filters, setFilters] = useState({ class: '', section: '', status: '' });
+    const [filters, setFilters] = useState({ class: '', section: '', status: '', schoolId: '' }); // Added schoolId filter
     const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({ name: '', rollNo: '', class: '', section: '' });
     const [editingStudent, setEditingStudent] = useState(null);
@@ -24,6 +25,7 @@ const StudentManagement = () => {
     useEffect(() => {
         fetchStudents();
         fetchClasses();
+        fetchBranches();
     }, []);
 
     const fetchStudents = async () => {
@@ -32,6 +34,7 @@ const StudentManagement = () => {
             if (filters.class) params.append('class', filters.class);
             if (filters.section) params.append('section', filters.section);
             if (filters.status) params.append('status', filters.status);
+            if (filters.schoolId) params.append('schoolId', filters.schoolId);
 
             const response = await api.get(`/api/school/students?${params}`);
             // Handle both paginated { data, pagination } and legacy array responses
@@ -49,6 +52,15 @@ const StudentManagement = () => {
             setClasses(response.data.uniqueClasses || []);
         } catch (error) {
             console.error('Error fetching classes:', error);
+        }
+    };
+
+    const fetchBranches = async () => {
+        try {
+            const response = await api.get('/api/school/branches');
+            setBranches(response.data || []);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
         }
     };
 
@@ -181,6 +193,20 @@ const StudentManagement = () => {
                         />
                     </div>
 
+                    {/* Branch Filter */}
+                    {branches.length > 0 && (
+                        <select
+                            className="form-input"
+                            value={filters.schoolId}
+                            onChange={(e) => setFilters({ ...filters, schoolId: e.target.value })}
+                        >
+                            <option value="">All Branches</option>
+                            {branches.map(b => (
+                                <option key={b._id} value={b._id}>{b.name}</option>
+                            ))}
+                        </select>
+                    )}
+
                     <select
                         className="form-input"
                         value={filters.class}
@@ -257,6 +283,7 @@ const StudentManagement = () => {
                                             <tr>
                                                 <th>Name</th>
                                                 <th>Access ID</th>
+                                                <th>Branch</th>
                                                 <th>Class</th>
                                                 <th>Section</th>
                                                 <th>Roll No</th>
@@ -272,6 +299,9 @@ const StudentManagement = () => {
                                                         <td className="font-medium">{student.name}</td>
                                                         <td>
                                                             <code className="access-id-code">{student.accessId}</code>
+                                                        </td>
+                                                        <td>
+                                                            {student.schoolId?.name || (branches.find(b => b._id === student.schoolId)?.name) || 'Main'}
                                                         </td>
                                                         <td>{student.class}</td>
                                                         <td>{student.section || '-'}</td>

@@ -13,8 +13,12 @@ import {
     faSchool,
     faSearch,
     faPlus,
-    faPaperPlane
+    faPaperPlane,
+    faChevronDown,
+    faChevronRight,
+    faBuilding
 } from '@fortawesome/free-solid-svg-icons';
+import { Country, State, City } from 'country-state-city';
 import Layout from '../../components/common/Layout';
 import Pagination from '../../components/common/Pagination';
 import { useToast } from '../../components/common/Toast';
@@ -45,16 +49,22 @@ const SchoolManagement = () => {
     const [analyticsLoading, setAnalyticsLoading] = useState(false);
     const [analyticsFilters, setAnalyticsFilters] = useState({ class: '', section: '', assessmentId: '', search: '' });
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+    const [expandedSchools, setExpandedSchools] = useState({}); // Track expanded super schools
 
     const [formData, setFormData] = useState({
         name: '',
-        address: '',
+        address: '', // Street address
+        city: '',
+        state: '',
+        pincode: '',
         phone: '',
         email: '',
         confirmEmail: '', // For email confirmation
         isDataVisibleToSchool: false,
         sendEmail: true, // Send credentials email by default
-        logo: null
+        logo: null,
+        type: 'super', // Default to super
+        parentId: null
     });
 
     useEffect(() => {
@@ -111,7 +121,12 @@ const SchoolManagement = () => {
 
         const form = new FormData();
         form.append('name', formData.name);
-        form.append('address', formData.address);
+        form.append('address', formData.address); // Street
+        form.append('city', formData.city);
+        form.append('state', formData.state);
+        form.append('pincode', formData.pincode);
+        form.append('type', formData.type);
+        if (formData.parentId) form.append('parentId', formData.parentId);
         form.append('phone', formData.phone);
         form.append('email', formData.email);
         form.append('isDataVisibleToSchool', formData.isDataVisibleToSchool);
@@ -180,29 +195,67 @@ const SchoolManagement = () => {
             setEditingSchool(school);
             setFormData({
                 name: school.name,
-                address: school.address || '',
+                address: school.address?.street || school.address || '',
+                city: school.address?.city || '',
+                state: school.address?.state || '',
+                pincode: school.address?.pincode || '',
                 phone: school.contact?.phone || '',
                 email: school.email || school.contact?.email || '',
                 confirmEmail: '', // Not needed for editing
                 isDataVisibleToSchool: school.isDataVisibleToSchool,
                 sendEmail: false, // Don't send email when editing
-                logo: null
+                logo: null,
+                type: school.type || 'super',
+                parentId: school.parentId
             });
         } else {
             setEditingSchool(null);
             setFormData({
                 name: '',
                 address: '',
+                city: '',
+                state: '',
+                pincode: '',
                 phone: '',
                 email: '',
                 confirmEmail: '',
                 isDataVisibleToSchool: false,
                 sendEmail: true, // Default to send email for new schools
-                logo: null
+                logo: null,
+                type: 'super',
+                parentId: null
             });
         }
         setCredentials(null);
         setShowModal(true);
+    };
+
+    const openBranchModal = (parentSchool) => {
+        setEditingSchool(null);
+        setFormData({
+            name: '',
+            address: parentSchool.address?.street || '',
+            city: parentSchool.address?.city || '',
+            state: parentSchool.address?.state || '',
+            pincode: parentSchool.address?.pincode || '',
+            phone: '',
+            email: '',
+            confirmEmail: '',
+            isDataVisibleToSchool: parentSchool.isDataVisibleToSchool,
+            sendEmail: true,
+            logo: null,
+            type: 'sub',
+            parentId: parentSchool._id
+        });
+        setCredentials(null);
+        setShowModal(true);
+    };
+
+    const toggleExpand = (schoolId) => {
+        setExpandedSchools(prev => ({
+            ...prev,
+            [schoolId]: !prev[schoolId]
+        }));
     };
 
     const closeModal = () => {
@@ -212,12 +265,17 @@ const SchoolManagement = () => {
         setFormData({
             name: '',
             address: '',
+            city: '',
+            state: '',
+            pincode: '',
             phone: '',
             email: '',
             confirmEmail: '',
             isDataVisibleToSchool: false,
             sendEmail: true,
-            logo: null
+            logo: null,
+            type: 'super',
+            parentId: null
         });
     };
 
@@ -426,126 +484,169 @@ const SchoolManagement = () => {
             {/* Schools Grid */}
             <div className="schools-grid">
                 {filteredSchools.map((school, index) => (
-                    <motion.div
-                        key={school._id}
-                        className={`school-card ${school.isBlocked ? 'blocked' : ''}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                    >
-                        {school.isBlocked && <div className="blocked-badge">BLOCKED</div>}
+                    <div key={school._id}>
+                        <motion.div
+                            className={`school-card ${school.isBlocked ? 'blocked' : ''}`}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                        >
+                            {school.isBlocked && <div className="blocked-badge">BLOCKED</div>}
 
-                        {/* Header: Logo + Name */}
-                        <div className="school-card-header">
-                            <div className="school-card-avatar">
-                                {school.logo ? (
-                                    <img src={school.logo} alt={school.name} />
-                                ) : (
-                                    <span>{school.name[0]}</span>
-                                )}
+                            {/* Header: Logo + Name */}
+                            <div className="school-card-header">
+                                <div className="school-card-avatar">
+                                    {school.logo ? (
+                                        <img src={school.logo} alt={school.name} />
+                                    ) : (
+                                        <span>{school.name[0]}</span>
+                                    )}
+                                </div>
+                                <div className="school-card-info">
+                                    <h3 className="school-card-name">
+                                        {school.name}
+                                        {school.branches?.length > 0 && (
+                                            <span
+                                                className="branch-count-badge"
+                                                onClick={(e) => { e.stopPropagation(); toggleExpand(school._id); }}
+                                            >
+                                                {school.branches.length} Branches
+                                                <FontAwesomeIcon icon={expandedSchools[school._id] ? faChevronDown : faChevronRight} style={{ marginLeft: '5px' }} />
+                                            </span>
+                                        )}
+                                    </h3>
+                                    <span className="school-card-id">{school.schoolId}</span>
+                                    <span className="school-address-sm">
+                                        {school.address?.city}, {school.address?.state}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="school-card-info">
-                                <h3 className="school-card-name">{school.name}</h3>
-                                <span className="school-card-id">{school.schoolId}</span>
-                            </div>
-                        </div>
 
-                        {/* Stats Row */}
-                        <div className="school-card-stats">
-                            <div className="school-stat">
-                                <span className="school-stat-value">{school.studentCount || 0}</span>
-                                <span className="school-stat-label">Students</span>
+                            {/* Stats Row */}
+                            <div className="school-card-stats">
+                                <div className="school-stat">
+                                    <span className="school-stat-value">{school.studentCount || 0}</span>
+                                    <span className="school-stat-label">Students</span>
+                                </div>
+                                <div className="school-stat">
+                                    <span className="school-stat-value">{school.submissionCount || 0}</span>
+                                    <span className="school-stat-label">Check-ins</span>
+                                </div>
+                                <div className="school-stat">
+                                    <span className="school-stat-value">{school.assignedTests?.length || 0}</span>
+                                    <span className="school-stat-label">Assigned</span>
+                                </div>
                             </div>
-                            <div className="school-stat">
-                                <span className="school-stat-value">{school.submissionCount || 0}</span>
-                                <span className="school-stat-label">Check-ins</span>
-                            </div>
-                            <div className="school-stat">
-                                <span className="school-stat-value">{school.assignedTests?.length || 0}</span>
-                                <span className="school-stat-label">Assianed</span>
-                            </div>
-                        </div>
 
-                        {/* Credentials Display - Email only (password hidden for security) */}
-                        <div className="credentials-box" style={{ padding: '10px 12px' }}>
-                            <div className="credential-row">
-                                <span className="credential-label">Email:</span>
-                                <span className="credential-value" style={{ fontSize: '0.85rem' }}>{school.email || 'Not set'}</span>
-                                {school.email && (
-                                    <>
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => copyToClipboard(school.email)}
-                                            title="Copy Email"
-                                        >
-                                            <FontAwesomeIcon icon={faCopy} />
-                                        </button>
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => handleSendCredentials(school, false)}
-                                            title="Resend Credentials Email"
-                                            style={{ marginLeft: '4px', color: 'var(--primary-purple)' }}
-                                        >
-                                            <FontAwesomeIcon icon={faPaperPlane} size="sm" />
-                                        </button>
-                                    </>
-                                )}
+                            {/* Credentials Display - Email only (password hidden for security) */}
+                            <div className="credentials-box" style={{ padding: '10px 12px' }}>
+                                <div className="credential-row">
+                                    <span className="credential-label">Email:</span>
+                                    <span className="credential-value" style={{ fontSize: '0.85rem' }}>{school.email || 'Not set'}</span>
+                                    {school.email && (
+                                        <>
+                                            <button
+                                                className="copy-btn"
+                                                onClick={() => copyToClipboard(school.email)}
+                                                title="Copy Email"
+                                            >
+                                                <FontAwesomeIcon icon={faCopy} />
+                                            </button>
+                                            <button
+                                                className="copy-btn"
+                                                onClick={() => handleSendCredentials(school, false)}
+                                                title="Resend Credentials Email"
+                                                style={{ marginLeft: '4px', color: 'var(--primary-purple)' }}
+                                            >
+                                                <FontAwesomeIcon icon={faPaperPlane} size="sm" />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Action Buttons - Clean Horizontal Layout */}
-                        <div className="school-card-actions">
-                            <button
-                                className="action-btn"
-                                onClick={() => openCredentialsModal(school)}
-                                title="Edit Credentials"
-                            >
-                                <FontAwesomeIcon icon={faKey} />
-                            </button>
-                            <button
-                                className="action-btn"
-                                onClick={() => openTestsModal(school)}
-                                title="Manage Check-ins"
-                            >
-                                <FontAwesomeIcon icon={faClipboardList} />
-                            </button>
-                            <button
-                                className="action-btn analytics"
-                                onClick={() => openAnalyticsModal(school)}
-                                title="View Insights"
-                            >
-                                <FontAwesomeIcon icon={faChartLine} />
-                            </button>
-                            <button
-                                className="action-btn"
-                                onClick={() => openModal(school)}
-                                title="Edit School"
-                            >
-                                <FontAwesomeIcon icon={faPenToSquare} />
-                            </button>
-                            <button
-                                className={`action-btn ${school.isBlocked ? 'success' : 'warning'}`}
-                                onClick={() => handleToggleBlock(school)}
-                                title={school.isBlocked ? 'Unblock' : 'Block'}
-                            >
-                                <FontAwesomeIcon icon={school.isBlocked ? faCircleCheck : faBan} />
-                            </button>
-                            <button
-                                className="action-btn danger"
-                                onClick={() => handleDelete(school._id)}
-                                title="Delete School"
-                            >
-                                <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                        </div>
+                            {/* Action Buttons - Clean Horizontal Layout */}
+                            <div className="school-card-actions">
+                                <button
+                                    className="action-btn"
+                                    onClick={() => openBranchModal(school)}
+                                    title="Add Branch"
+                                    style={{ color: 'var(--primary-purple)' }}
+                                >
+                                    <FontAwesomeIcon icon={faBuilding} />
+                                </button>
+                                <button
+                                    className="action-btn"
+                                    onClick={() => openCredentialsModal(school)}
+                                    title="Edit Credentials"
+                                >
+                                    <FontAwesomeIcon icon={faKey} />
+                                </button>
+                                <button
+                                    className="action-btn"
+                                    onClick={() => openTestsModal(school)}
+                                    title="Manage Check-ins"
+                                >
+                                    <FontAwesomeIcon icon={faClipboardList} />
+                                </button>
+                                <button
+                                    className="action-btn analytics"
+                                    onClick={() => openAnalyticsModal(school)}
+                                    title="View Insights"
+                                >
+                                    <FontAwesomeIcon icon={faChartLine} />
+                                </button>
+                                <button
+                                    className="action-btn"
+                                    onClick={() => openModal(school)}
+                                    title="Edit School"
+                                >
+                                    <FontAwesomeIcon icon={faPenToSquare} />
+                                </button>
+                                <button
+                                    className={`action-btn ${school.isBlocked ? 'success' : 'warning'}`}
+                                    onClick={() => handleToggleBlock(school)}
+                                    title={school.isBlocked ? 'Unblock' : 'Block'}
+                                >
+                                    <FontAwesomeIcon icon={school.isBlocked ? faCircleCheck : faBan} />
+                                </button>
+                                <button
+                                    className="action-btn danger"
+                                    onClick={() => handleDelete(school._id)}
+                                    title="Delete School"
+                                >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                            </div>
 
-                        {/* Footer */}
-                        <div className="school-card-footer">
-                            <span className={`badge ${school.isDataVisibleToSchool ? 'badge-success' : 'badge-warning'}`}>
-                                {school.isDataVisibleToSchool ? 'Data Visible' : 'Data Hidden'}
-                            </span>
-                        </div>
-                    </motion.div>
+                            {/* Footer */}
+                            <div className="school-card-footer">
+                                <span className={`badge ${school.isDataVisibleToSchool ? 'badge-success' : 'badge-warning'}`}>
+                                    {school.isDataVisibleToSchool ? 'Data Visible' : 'Data Hidden'}
+                                </span>
+                            </div>
+                        </motion.div>
+
+                        {/* Sub-schools / Branches */}
+                        {expandedSchools[school._id] && school.branches && school.branches.length > 0 && (
+                            <div className="school-branches-container">
+                                {school.branches.map((branch) => (
+                                    <div key={branch._id} className="branch-card">
+                                        <div className="branch-info">
+                                            <h4>{branch.name}</h4>
+                                            <small>{branch.address?.city}, {branch.address?.state}</small>
+                                            <div className="branch-stats">
+                                                <span>{branch.stats?.studentCount || 0} Students</span>
+                                            </div>
+                                        </div>
+                                        <div className="branch-actions">
+                                            <button className="btn-icon-sm" onClick={() => openModal(branch)} title="Edit"><FontAwesomeIcon icon={faPenToSquare} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 ))}
 
                 {filteredSchools.length === 0 && schools.length > 0 && (
@@ -590,7 +691,7 @@ const SchoolManagement = () => {
                         >
                             <div className="modal-header">
                                 <h2 className="modal-title">
-                                    {credentials ? '✅ School Registered!' : editingSchool ? 'Edit School' : 'Register New School'}
+                                    {credentials ? '✅ Registered!' : editingSchool ? 'Edit School' : formData.type === 'sub' ? 'Add Branch' : 'Register New School'}
                                 </h2>
                                 <button className="modal-close" onClick={closeModal}>×</button>
                             </div>
@@ -641,14 +742,56 @@ const SchoolManagement = () => {
                                             />
                                         </div>
 
+
+
                                         <div className="form-group">
-                                            <label className="form-label">Address</label>
+                                            <label className="form-label">Location (India)</label>
+                                            <div className="form-row">
+                                                <select
+                                                    className="form-input"
+                                                    value={formData.state}
+                                                    onChange={(e) => setFormData({ ...formData, state: e.target.value, city: '' })}
+                                                    required
+                                                >
+                                                    <option value="">Select State</option>
+                                                    {State.getStatesOfCountry('IN').map((state) => (
+                                                        <option key={state.isoCode} value={state.isoCode}>{state.name}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    className="form-input"
+                                                    value={formData.city}
+                                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                    required
+                                                    disabled={!formData.state}
+                                                >
+                                                    <option value="">Select City</option>
+                                                    {formData.state && City.getCitiesOfState('IN', formData.state).map((city) => (
+                                                        <option key={city.name} value={city.name}>{city.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="form-row" style={{ marginTop: '10px' }}>
+                                                <input
+                                                    type="text"
+                                                    className="form-input"
+                                                    value={formData.pincode}
+                                                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                                                    placeholder="Pincode"
+                                                    maxLength="6"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Full Address / Street</label>
                                             <textarea
                                                 className="form-input"
                                                 value={formData.address}
                                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                placeholder="Enter address"
+                                                placeholder="Enter street, building, area..."
                                                 rows="2"
+                                                required
                                             />
                                         </div>
 

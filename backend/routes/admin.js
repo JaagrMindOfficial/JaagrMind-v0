@@ -423,6 +423,8 @@ router.get('/schools', protect, isAdmin, async (req, res) => {
 
         const schools = await School.find(query)
             .populate('assignedTests', 'title isDefault')
+            .populate('branches') // Populate sub-schools
+            .populate('parentId', 'name schoolId') // Populate parent info
             .select('-password')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -466,7 +468,7 @@ router.get('/schools', protect, isAdmin, async (req, res) => {
 // @access  Admin
 router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res) => {
     try {
-        const { name, address, phone, email, isDataVisibleToSchool, sendEmail } = req.body;
+        const { name, address, city, state, pincode, phone, email, type, parentId, isDataVisibleToSchool, sendEmail } = req.body;
 
         // Validate email is required for new schools
         if (!email) {
@@ -476,7 +478,16 @@ router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res
         // Check if email already exists
         const existingSchool = await School.findOne({ email: email.toLowerCase() });
         if (existingSchool) {
-            return res.status(400).json({ message: 'A school with this email already exists' });
+            // Check if it's a "zombie" record (isActive: false)
+            if (existingSchool.isActive === false) {
+                console.log(`Found inactive school record for ${email}, cleaning up before registration...`);
+                // Clean up the inactive record
+                await School.findByIdAndDelete(existingSchool._id);
+                // Also clean up credentials if they exist
+                await SchoolCredentials.deleteMany({ schoolId: existingSchool._id });
+            } else {
+                return res.status(400).json({ message: 'A school with this email already exists' });
+            }
         }
 
         // Generate unique school ID and password
@@ -490,12 +501,23 @@ router.post('/schools', protect, isAdmin, upload.single('logo'), async (req, res
         const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:5173';
         const loginUrl = `${frontendUrl}/login`;
 
+        // Construct address object
+        const addressObj = {
+            street: address || '',
+            city: city || '',
+            state: state || '',
+            pincode: pincode || '',
+            full: address ? `${address}${city ? ', ' + city : ''}${state ? ', ' + state : ''}${pincode ? ' - ' + pincode : ''}` : ''
+        };
+
         // Create school
         const school = await School.create({
             schoolId,
             name,
             email: email.toLowerCase(),
-            address,
+            address: addressObj,
+            type: type || 'super',
+            parentId: parentId || null,
             contact: { phone, email },
             password: plainPassword,
             plainPassword: plainPassword,
@@ -616,7 +638,7 @@ router.post('/schools/:id/send-credentials', protect, isAdmin, async (req, res) 
 // @access  Admin
 router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, res) => {
     try {
-        const { name, address, phone, email, isDataVisibleToSchool, resetPassword } = req.body;
+        const { name, address, city, state, pincode, phone, email, type, parentId, isDataVisibleToSchool, resetPassword } = req.body;
 
         const school = await School.findById(req.params.id);
         if (!school) {
@@ -624,7 +646,28 @@ router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, 
         }
 
         school.name = name || school.name;
-        school.address = address || school.address;
+
+        // Update structured address
+        if (address !== undefined) school.address.street = address;
+        if (city !== undefined) school.address.city = city;
+        if (state !== undefined) school.address.state = state;
+        if (pincode !== undefined) school.address.pincode = pincode;
+
+        // Update full address if any part changed or if it was empty
+        if (address || city || state || pincode) {
+            const street = school.address.street || '';
+            const c = school.address.city || '';
+            const s = school.address.state || '';
+            const p = school.address.pincode || '';
+            school.address.full = `${street}${c ? ', ' + c : ''}${s ? ', ' + s : ''}${p ? ' - ' + p : ''}`;
+        } else if (address) {
+            // Fallback if only address string was passed (legacy)
+            school.address.full = address;
+        }
+
+        if (type) school.type = type;
+        if (parentId) school.parentId = parentId;
+
         school.contact = {
             phone: phone || school.contact?.phone,
             email: email || school.contact?.email

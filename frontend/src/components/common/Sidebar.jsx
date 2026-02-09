@@ -42,7 +42,14 @@ const Sidebar = () => {
     const { theme } = useTheme();
     const navigate = useNavigate();
 
-    const menuItems = isAdmin ? adminMenuItems : isSchool ? schoolMenuItems : [];
+    const menuItems = isAdmin ? adminMenuItems : isSchool ? [
+        { path: '/school', icon: faHouse, label: 'Dashboard', exact: true },
+        ...(user?.type !== 'sub' ? [{ path: '/school/branches', icon: faSchool, label: 'Branches' }] : []),
+        { path: '/school/students', icon: faUserGraduate, label: 'Students' },
+        { path: '/school/tests', icon: faFileLines, label: 'Check-ins' },
+        { path: '/school/analytics', icon: faChartLine, label: 'Insights' },
+        { path: '/school/support', icon: faHeadset, label: 'Support' },
+    ] : [];
 
     // Logos for Expanded State (Full Logo)
     const expandedLogo = theme === 'dark' ? darkThemeLogo : lightThemeLogo;

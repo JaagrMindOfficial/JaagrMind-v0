@@ -56,6 +56,11 @@ const SchoolAnalytics = () => {
     const [uniqueClasses, setUniqueClasses] = useState([]);
     const [filters, setFilters] = useState({ class: '', section: '' });
     const [activeTab, setActiveTab] = useState('overview');
+    const [includeBranches, setIncludeBranches] = useState(false);
+    const [branches, setBranches] = useState([]); // State for branches list
+    const [selectedBranch, setSelectedBranch] = useState(''); // State for selected branch filter
+    const queryParams = new URLSearchParams(window.location.search);
+    const viewSchoolId = queryParams.get('schoolId');
 
     // Student details view
     const [studentsData, setStudentsData] = useState(null);
@@ -67,18 +72,36 @@ const SchoolAnalytics = () => {
     const [studentDetail, setStudentDetail] = useState(null);
     const [studentDetailLoading, setStudentDetailLoading] = useState(false);
     const [expandedSubmission, setExpandedSubmission] = useState(null);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
     useEffect(() => {
         fetchClasses();
+        fetchBranches(); // Fetch branches on mount
     }, []);
 
     useEffect(() => {
         fetchAnalytics();
-    }, [filters]);
+        fetchStudentsData(); // Ensure student list updates too
+    }, [filters, selectedBranch]); // Refetch on branch/filter change
+
+    const fetchBranches = async () => {
+        try {
+            const response = await api.get('/api/school/branches');
+            setBranches(response.data || []);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    };
 
     const fetchClasses = async () => {
         try {
-            const response = await api.get('/api/school/classes');
+            const params = new URLSearchParams();
+            if (viewSchoolId) params.append('schoolId', viewSchoolId);
+            if (selectedBranch) params.append('schoolId', selectedBranch); // Pass selected branch
+            // Also fetch classes for branches if aggregated
+            // For now, the backend classes endpoint might need update, or we just rely on main school classes
+            // Ideally, update classes endpoint too. For now let's keep it simple.
+            const response = await api.get(`/api/school/classes?${params.toString()}`);
             setClasses(response.data.classes || []);
             setUniqueClasses(response.data.uniqueClasses || []);
         } catch (error) {
@@ -92,6 +115,14 @@ const SchoolAnalytics = () => {
             const params = new URLSearchParams();
             if (filters.class) params.append('class', filters.class);
             if (filters.section) params.append('section', filters.section);
+
+            // Branch filtering logic
+            if (selectedBranch) {
+                params.append('schoolId', selectedBranch);
+            } else if (viewSchoolId) {
+                params.append('schoolId', viewSchoolId);
+            }
+            // For super school default view (no selectedBranch), backend handles aggregation automatically now
 
             const response = await api.get(`/api/school/analytics?${params.toString()}`);
             setData(response.data);
@@ -115,6 +146,12 @@ const SchoolAnalytics = () => {
             if (appliedFilters.section) params.append('section', appliedFilters.section);
             if (appliedFilters.assessmentId) params.append('assessmentId', appliedFilters.assessmentId);
             if (appliedFilters.search) params.append('search', appliedFilters.search);
+
+            if (selectedBranch) {
+                params.append('schoolId', selectedBranch);
+            } else if (viewSchoolId) {
+                params.append('schoolId', viewSchoolId);
+            }
 
             const response = await api.get(`/api/school/students-analytics?${params.toString()}`);
             setStudentsData(response.data);
@@ -234,7 +271,21 @@ const SchoolAnalytics = () => {
     const skillAreaData = getSkillAreaData();
 
     return (
-        <Layout title="School Insights" subtitle="Student skill check-in insights">
+        <Layout
+            title={data?.schoolName ? data.schoolName : (viewSchoolId ? "Branch Insights" : "School Insights")}
+            subtitle="Student skill check-in insights"
+        >
+            {viewSchoolId && (
+                <div style={{ marginBottom: '16px' }}>
+                    <button
+                        onClick={() => window.location.href = '/school/branches'}
+                        className="btn btn-outline btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                        <FontAwesomeIcon icon={faChevronDown} rotation={90} /> Back to Branches
+                    </button>
+                </div>
+            )}
             {/* Tabs */}
             <div className="analytics-tabs" style={{ marginBottom: '24px' }}>
                 <button
@@ -266,6 +317,25 @@ const SchoolAnalytics = () => {
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                     <FontAwesomeIcon icon={faFilter} style={{ color: 'var(--primary-purple)' }} />
+
+                    {/* Branch Filter for Super School */}
+                    {branches.length > 0 && (
+                        <select
+                            className="form-input"
+                            value={selectedBranch}
+                            onChange={(e) => {
+                                setSelectedBranch(e.target.value);
+                                setFilters(prev => ({ ...prev, class: '', section: '' }));
+                            }}
+                            style={{ width: 'auto', minWidth: '180px' }}
+                        >
+                            <option value="">All Branches</option>
+                            {branches.map(branch => (
+                                <option key={branch._id} value={branch._id}>{branch.name}</option>
+                            ))}
+                        </select>
+                    )}
+
                     <select
                         className="form-input"
                         value={filters.class}
@@ -468,6 +538,31 @@ const SchoolAnalytics = () => {
                                     <thead>
                                         <tr>
                                             <th>Student</th>
+                                            {data.aggregated && (
+                                                <th
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => {
+                                                        const direction = sortConfig?.key === 'branch' && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+                                                        setSortConfig({ key: 'branch', direction });
+
+                                                        // Sort function
+                                                        const sorted = [...data.recentSubmissions].sort((a, b) => {
+                                                            const nameA = a.schoolId?.name || '';
+                                                            const nameB = b.schoolId?.name || '';
+                                                            return direction === 'asc'
+                                                                ? nameA.localeCompare(nameB)
+                                                                : nameB.localeCompare(nameA);
+                                                        });
+
+                                                        // Direct mutation for simple state update in this context, 
+                                                        // or better: update data state. 
+                                                        // Assuming setData is available in scope.
+                                                        setData(prev => ({ ...prev, recentSubmissions: sorted }));
+                                                    }}
+                                                >
+                                                    Branch {sortConfig?.key === 'branch' && (sortConfig.direction === 'asc' ? <FontAwesomeIcon icon={faChevronUp} size="xs" /> : <FontAwesomeIcon icon={faChevronDown} size="xs" />)}
+                                                </th>
+                                            )}
                                             <th>Class</th>
                                             <th>Index</th>
                                             <th>Focus</th>
@@ -490,6 +585,13 @@ const SchoolAnalytics = () => {
                                                         {sub.studentId?.name || 'N/A'}
                                                     </button>
                                                 </td>
+                                                {data.aggregated && (
+                                                    <td>
+                                                        <span className="badge" style={{ background: '#f3f4f6', color: '#4b5563', border: '1px solid #e5e7eb' }}>
+                                                            {sub.schoolId?.name || 'Main'}
+                                                        </span>
+                                                    </td>
+                                                )}
                                                 <td>{sub.studentId?.class} {sub.studentId?.section}</td>
                                                 <td><strong>{sub.totalScore}</strong></td>
                                                 <td>{sub.sectionScores?.A || '-'}</td>
@@ -636,8 +738,29 @@ const SchoolAnalytics = () => {
                             placeholder="Search name or ID..."
                             value={studentFilters.search}
                             onChange={(e) => handleStudentFilterChange('search', e.target.value)}
+                            onChange={(e) => handleStudentFilterChange('search', e.target.value)}
                             style={{ maxWidth: '200px' }}
                         />
+
+                        {/* Branch Filter for Students Tab */}
+                        {branches.length > 0 && (
+                            <select
+                                className="form-input"
+                                value={selectedBranch} // Use global selectedBranch
+                                onChange={(e) => {
+                                    setSelectedBranch(e.target.value);
+                                    // Reset student filters might be good or keep them? 
+                                    // Let's keep them but maybe class/section needs reset if they don't match
+                                }}
+                                style={{ maxWidth: '180px' }}
+                            >
+                                <option value="">All Branches</option>
+                                {branches.map(branch => (
+                                    <option key={branch._id} value={branch._id}>{branch.name}</option>
+                                ))}
+                            </select>
+                        )}
+
                         <select
                             className="form-input"
                             value={studentFilters.class}
@@ -687,6 +810,7 @@ const SchoolAnalytics = () => {
                                     <tr>
                                         <th>Name</th>
                                         <th>Access ID</th>
+                                        <th>Branch</th>
                                         <th>Class</th>
                                         <th>Roll No</th>
                                         <th>Check-in</th>
@@ -719,6 +843,9 @@ const SchoolAnalytics = () => {
                                                                 </button>
                                                             </td>
                                                             <td rowSpan={student.submissions.length}><code style={{ fontSize: '0.8rem' }}>{student.accessId}</code></td>
+                                                            <td rowSpan={student.submissions.length}>
+                                                                {branches.find(b => b._id === student.schoolId)?.name || 'Main'}
+                                                            </td>
                                                             <td rowSpan={student.submissions.length}>{student.class} {student.section}</td>
                                                             <td rowSpan={student.submissions.length}>{student.rollNo || '-'}</td>
                                                         </>
@@ -753,6 +880,9 @@ const SchoolAnalytics = () => {
                                                     </button>
                                                 </td>
                                                 <td><code style={{ fontSize: '0.8rem' }}>{student.accessId}</code></td>
+                                                <td>
+                                                    {branches.find(b => b._id === student.schoolId)?.name || 'Main'}
+                                                </td>
                                                 <td>{student.class} {student.section}</td>
                                                 <td>{student.rollNo || '-'}</td>
                                                 <td colSpan="4" className="text-muted">No check-ins completed</td>

@@ -225,3 +225,134 @@
 .contact-value:hover {
     text-decoration: underline;
 }
+
+/* School Card Styles */
+.schools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.school-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+}
+
+.school-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.school-card-header {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.school-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--gradient-purple);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.school-card-info {
+    flex: 1;
+    min-width: 0;
+    /* Important for truncation */
+    padding-right: 32px;
+    /* Access for delete button */
+}
+
+.school-card-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.school-card-id {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--primary-purple);
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.school-address-sm {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.school-card-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.school-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.school-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.school-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Delete Button Corner */
+.btn-icon-delete {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-icon-delete:hover {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
