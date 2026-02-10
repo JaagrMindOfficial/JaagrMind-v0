@@ -17,7 +17,8 @@ import {
     faPaperPlane,
     faChevronDown,
     faChevronRight,
-    faBuilding
+    faBuilding,
+    faTimes
 } from '@fortawesome/free-solid-svg-icons';
 import { Country, State, City } from 'country-state-city';
 import Layout from '../../components/common/Layout';
@@ -49,6 +50,12 @@ const SchoolManagement = () => {
     const navigate = useNavigate();
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
     const [expandedSchools, setExpandedSchools] = useState({}); // Track expanded super schools
+
+    // Filters
+    const [filterState, setFilterState] = useState('');
+    const [filterCity, setFilterCity] = useState('');
+    const [filterBlocked, setFilterBlocked] = useState(false);
+    const [filterHasBranch, setFilterHasBranch] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -414,10 +421,27 @@ const SchoolManagement = () => {
         );
     }
 
-    const filteredSchools = schools.filter(school =>
-        school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        school.schoolId.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Get unique states and cities for filter dropdowns
+    const states = [...new Set(schools.map(school => school.address?.state).filter(Boolean))].sort();
+    const cities = [...new Set(schools
+        .filter(school => !filterState || school.address?.state === filterState)
+        .map(school => school.address?.city)
+        .filter(Boolean))
+    ].sort();
+
+    const filteredSchools = schools.filter(school => {
+        const matchesSearch =
+            school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            school.schoolId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (school.email && school.email.toLowerCase().includes(searchQuery.toLowerCase()));
+
+        const matchesState = filterState ? school.address?.state === filterState : true;
+        const matchesCity = filterCity ? school.address?.city === filterCity : true;
+        const matchesBlocked = filterBlocked ? school.isBlocked : true;
+        const matchesBranch = filterHasBranch ? (school.branches && school.branches.length > 0) : true;
+
+        return matchesSearch && matchesState && matchesCity && matchesBlocked && matchesBranch;
+    });
 
     return (
         <Layout title="School Management" subtitle="Manage schools and branches">
@@ -436,6 +460,66 @@ const SchoolManagement = () => {
                 <div className="header-info">
                     <span className="text-muted">{filteredSchools.length} of {schools.length} school(s)</span>
                 </div>
+
+                <div className="filters-container">
+                    <select
+                        className="form-select filter-select"
+                        value={filterState}
+                        onChange={(e) => {
+                            setFilterState(e.target.value);
+                            setFilterCity(''); // Reset city when state changes
+                        }}
+                    >
+                        <option value="">All States</option>
+                        {states.map(state => (
+                            <option key={state} value={state}>{state}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="form-select filter-select"
+                        value={filterCity}
+                        onChange={(e) => setFilterCity(e.target.value)}
+                    >
+                        <option value="">All Cities</option>
+                        {cities.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                        ))}
+                    </select>
+
+                    <label className="filter-checkbox">
+                        <input
+                            type="checkbox"
+                            checked={filterBlocked}
+                            onChange={(e) => setFilterBlocked(e.target.checked)}
+                        />
+                        <span>Blocked Only</span>
+                    </label>
+
+                    <label className="filter-checkbox">
+                        <input
+                            type="checkbox"
+                            checked={filterHasBranch}
+                            onChange={(e) => setFilterHasBranch(e.target.checked)}
+                        />
+                        <span>Has Branches</span>
+                    </label>
+
+                    {(filterState || filterCity || filterBlocked || filterHasBranch) && (
+                        <button
+                            className="btn-text"
+                            onClick={() => {
+                                setFilterState('');
+                                setFilterCity('');
+                                setFilterBlocked(false);
+                                setFilterHasBranch(false);
+                            }}
+                            title="Clear Filters"
+                        >
+                            <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                    )}
+                </div>
                 <motion.button
                     className="btn btn-primary"
                     onClick={() => openModal()}
@@ -452,7 +536,7 @@ const SchoolManagement = () => {
                     <thead>
                         <tr>
                             <th width="25%">School</th>
-                            <th width="15%">Location</th>
+                            <th width="20%">School ID</th>
                             <th width="20%">Stats (Students / Check-ins / Tests)</th>
                             <th width="20%">Credentials</th>
                             <th width="10%">Access</th>
@@ -486,15 +570,21 @@ const SchoolManagement = () => {
                                                         />
                                                     )}
                                                 </div>
-                                                <div className="school-id-badge" title={school.schoolId}>{school.schoolId}</div>
+                                                {school.parentId && (
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                        <FontAwesomeIcon icon={faBuilding} style={{ fontSize: '0.65rem' }} />
+                                                        <span>{school.parentId.name}</span>
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                    {school.address?.city}, {school.address?.state}
+                                                </div>
                                                 {school.isBlocked && <span style={{ color: 'var(--danger)', fontSize: '0.7rem', fontWeight: 600 }}>BLOCKED</span>}
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div title={`${school.address?.city}, ${school.address?.state}`}>
-                                            {school.address?.city}, {school.address?.state}
-                                        </div>
+                                        <div className="school-id-badge" title={school.schoolId}>{school.schoolId}</div>
                                     </td>
                                     <td>
                                         <div className="stats-cell">
@@ -598,7 +688,7 @@ const SchoolManagement = () => {
                                                     <thead>
                                                         <tr>
                                                             <th>Branch Name</th>
-                                                            <th>Location</th>
+                                                            <th>Branch ID</th>
                                                             <th>Students</th>
                                                             <th>Actions</th>
                                                         </tr>
@@ -606,8 +696,34 @@ const SchoolManagement = () => {
                                                     <tbody>
                                                         {school.branches.map((branch) => (
                                                             <tr key={branch._id}>
-                                                                <td>{branch.name}</td>
-                                                                <td>{branch.address?.city}, {branch.address?.state}</td>
+                                                                <td>
+                                                                    <div className="school-info-cell">
+                                                                        <div className="school-logo-sm" style={{ width: '32px', height: '32px', fontSize: '0.8rem' }}>
+                                                                            {school.logo ? (
+                                                                                <img src={school.logo} alt={school.name} />
+                                                                            ) : (
+                                                                                <span>{school.name[0]}</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="school-details">
+                                                                            <div className="school-name-link" style={{ fontSize: '0.9rem' }}>
+                                                                                {branch.name}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                <FontAwesomeIcon icon={faSchool} style={{ fontSize: '0.65rem' }} />
+                                                                                {school.name}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                                                {branch.address?.city}, {branch.address?.state}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div className="school-id-badge" title={branch.schoolId} style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                                                                        {branch.schoolId}
+                                                                    </div>
+                                                                </td>
                                                                 <td>{branch.stats?.studentCount || 0}</td>
                                                                 <td>
                                                                     <div style={{ display: 'flex', gap: '8px' }}>
