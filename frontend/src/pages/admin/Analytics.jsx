@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, Legend } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,6 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import Layout from '../../components/common/Layout';
+
 import './Analytics.css';
 
 // Skill area config
@@ -56,11 +58,42 @@ const Analytics = () => {
     const [expandedSubmission, setExpandedSubmission] = useState(null); // For expanding question details
     const [trendPeriod, setTrendPeriod] = useState('monthly'); // 'monthly' or 'weekly' for trend charts
 
+    // URL params handling
+    const location = useLocation();
+
     // Fetch nationwide data and tests
     useEffect(() => {
         fetchNationwideData();
         fetchTestsData();
     }, []);
+
+    // Effect to handle URL params for deep linking
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const schoolIdParam = params.get('schoolId');
+
+        if (schoolIdParam && nationwideData?.schools && !selectedSchool) {
+            // Try to find in top-level schools
+            let targetSchool = nationwideData.schools.find(s => s._id === schoolIdParam);
+
+            // If not found, try to find in branches
+            if (!targetSchool) {
+                for (const school of nationwideData.schools) {
+                    if (school.branches && school.branches.length > 0) {
+                        const foundBranch = school.branches.find(b => b._id === schoolIdParam);
+                        if (foundBranch) {
+                            targetSchool = foundBranch;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (targetSchool) {
+                navigateToSchool(targetSchool);
+            }
+        }
+    }, [location.search, nationwideData]);
 
     const fetchNationwideData = async () => {
         try {
@@ -511,7 +544,7 @@ const Analytics = () => {
                             <th>Student</th>
                             <th>Roll No</th>
                             <th>Section</th>
-                            <th>Index</th>
+
                             <th>Status</th>
                             <th></th>
                         </tr>
@@ -539,13 +572,7 @@ const Analytics = () => {
                                 </td>
                                 <td>{student.rollNo || '-'}</td>
                                 <td>{student.section || '-'}</td>
-                                <td>
-                                    {student.hasSubmission ? (
-                                        <span className="score-value">{student.totalScore}</span>
-                                    ) : (
-                                        <span className="no-data">-</span>
-                                    )}
-                                </td>
+
                                 <td>
                                     {student.hasSubmission ? (
                                         <span className={`bucket-badge ${student.bucket}`}>
@@ -737,6 +764,7 @@ const Analytics = () => {
 
     return (
         <Layout title="Analytics" subtitle="Comprehensive insights across all schools">
+
             <div className="analytics-page">
                 <Breadcrumbs />
 
@@ -857,7 +885,7 @@ const Analytics = () => {
                                                                 <tr>
                                                                     <th>School</th>
                                                                     <th>Check-ins</th>
-                                                                    <th>Avg Index</th>
+
                                                                     <th>Distribution</th>
                                                                 </tr>
                                                             </thead>
@@ -866,7 +894,7 @@ const Analytics = () => {
                                                                     <tr key={school._id}>
                                                                         <td>{school.name}</td>
                                                                         <td>{school.submissions}</td>
-                                                                        <td>{school.avgScore}</td>
+
                                                                         <td>
                                                                             <div className="mini-dist">
                                                                                 <span className="green">{school.distribution.doingWell}</span>
@@ -902,7 +930,7 @@ const Analytics = () => {
                                 {schoolData.school.logo && <img src={schoolData.school.logo} alt="" className="school-logo-large" />}
                                 <div>
                                     <h1>{schoolData.school.name}</h1>
-                                    <p>{schoolData.school.address || schoolData.school.schoolId}</p>
+                                    <p>{(typeof schoolData.school.address === 'string' ? schoolData.school.address : schoolData.school.address?.full) || schoolData.school.schoolId}</p>
                                 </div>
                             </div>
 
@@ -945,7 +973,7 @@ const Analytics = () => {
                                             <div key={i} className="recent-sub-item">
                                                 <span>{sub.studentName}</span>
                                                 <span>Class {sub.class}</span>
-                                                <span>Index: {sub.totalScore}</span>
+
                                                 <span className={`bucket-badge ${sub.bucket}`}>{sub.bucket}</span>
                                             </div>
                                         ))}

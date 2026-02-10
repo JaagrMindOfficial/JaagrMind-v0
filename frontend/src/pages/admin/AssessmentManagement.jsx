@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../../components/common/Layout';
+import Background3D from '../../components/common/Background3D';
 import { useToast } from '../../components/common/Toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faPencil, faTrash, faStar, faList, faClipboardList } from '@fortawesome/free-solid-svg-icons';
@@ -259,6 +260,7 @@ const AssessmentManagement = () => {
 
     return (
         <Layout title="Check-in Management" subtitle="Manage wellness check-ins">
+            <Background3D />
             <div className="page-header">
                 <div>
                     <span className="text-muted">{assessments.length} check-in(s)</span>

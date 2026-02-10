@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faFilter, faCheckCircle, faClock, faSpinner, faArrowRight, faTimes, faPlay } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
+import Background3D from '../../components/common/Background3D';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -143,6 +144,7 @@ const AdminTickets = () => {
 
     return (
         <Layout title="Support Tickets" subtitle="Manage and resolve school inquiries">
+            <Background3D />
             <div className="grid grid-3" style={{ position: 'relative', zIndex: 1 }}>
                 {/* valid ticket list - always full width */}
                 <div style={{ gridColumn: 'span 3' }}>

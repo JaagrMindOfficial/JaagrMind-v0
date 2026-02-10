@@ -14,6 +14,7 @@ import {
     faEyeSlash
 } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
+import Background3D from '../../components/common/Background3D';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import './AdminManagement.css';
@@ -179,6 +180,7 @@ const AdminManagement = () => {
 
     return (
         <Layout title="Admin Management" subtitle="Manage administrator accounts">
+            <Background3D />
             {message.text && (
                 <motion.div
                     className={`page-message message-alert ${message.type}`}
