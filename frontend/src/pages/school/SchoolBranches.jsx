@@ -272,7 +272,7 @@ const SchoolBranches = () => {
                             </div>
                         </div>
 
-                        <div className="school-card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #eee' }}>
+                        <div className="school-card-actions">
                             <button
                                 className="btn btn-outline btn-sm action-btn"
                                 onClick={() => handleEdit(branch)}

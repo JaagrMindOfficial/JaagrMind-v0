@@ -234,7 +234,7 @@
 }
 
 .school-card {
-    background: white;
+    background: var(--primary-white);
     border-radius: var(--radius-lg);
     padding: 24px;
     box-shadow: var(--shadow-md);
@@ -355,4 +355,17 @@
     justify-content: center;
     gap: 8px;
     width: 100%;
+}
+
+.school-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light, rgba(0, 0, 0, 0.1));
+}
+
+[data-theme="dark"] .school-card-actions {
+    border-top-color: rgba(255, 255, 255, 0.1);
 }
