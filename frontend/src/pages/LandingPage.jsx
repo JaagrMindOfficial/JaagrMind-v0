@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBrain,
@@ -34,8 +34,6 @@ const LandingPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -44,7 +42,7 @@ const LandingPage = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await axios.post(`${API_URL}/tickets/public`, formData);
+            await api.post('/tickets/public', formData);
             setSubmitStatus('success');
             setFormData({ name: '', email: '', subject: '', message: '' });
             setTimeout(() => setSubmitStatus(null), 5000);
