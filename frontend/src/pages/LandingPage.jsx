@@ -42,7 +42,7 @@ const LandingPage = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await api.post('/tickets/public', formData);
+            await api.post('/api/tickets/public', formData);
             setSubmitStatus('success');
             setFormData({ name: '', email: '', subject: '', message: '' });
             setTimeout(() => setSubmitStatus(null), 5000);
