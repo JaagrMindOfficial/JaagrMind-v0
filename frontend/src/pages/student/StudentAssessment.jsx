@@ -782,10 +782,16 @@ const StudentAssessment = ({ previewMode = false }) => {
                             exit={{ scale: 0, rotate: 180 }}
                             transition={{ type: "spring", duration: 0.8 }}
                         >
-                            <div className="level-up-ribbon">🎉</div>
-                            <h2>Part {currentLevel - 1} Complete!</h2>
-                            <p>Moving to Part {currentLevel}...</p>
-                            <div className="level-up-stars">⭐⭐⭐</div>
+                            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Reflection Moment</h2>
+                            <p style={{ fontSize: '1.1rem', lineHeight: '1.6', maxWidth: '400px', margin: '0 auto' }}>
+                                {currentLevel === 2 ?
+                                    "This Level Is Complete. You took a moment to notice how you're really feeling. That kind of awareness builds clarity over time." :
+                                    currentLevel === 3 ?
+                                        "You paused, reflected, and shared honestly. That's an important step in understanding yourself." :
+                                        currentLevel === 4 ?
+                                            "All Set with this level. You paid attention to your thoughts and emotions. Noticing these things helps you respond better." :
+                                            "Level Complete. Thank you for your continued focus and reflection."}
+                            </p>
                         </motion.div>
                     </motion.div>
                 )}
