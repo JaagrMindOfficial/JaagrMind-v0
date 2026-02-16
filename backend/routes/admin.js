@@ -647,6 +647,11 @@ router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, 
 
         school.name = name || school.name;
 
+        // Ensure address object exists
+        if (!school.address) {
+            school.address = {};
+        }
+
         // Update structured address
         if (address !== undefined) school.address.street = address;
         if (city !== undefined) school.address.city = city;
@@ -668,10 +673,24 @@ router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, 
         if (type) school.type = type;
         if (parentId) school.parentId = parentId;
 
+        // Update contact info
         school.contact = {
             phone: phone || school.contact?.phone,
             email: email || school.contact?.email
         };
+
+        // Update root email (login email) if changed, checking uniqueness
+        if (email && email.toLowerCase() !== school.email) {
+            const emailExists = await School.findOne({
+                email: email.toLowerCase(),
+                _id: { $ne: school._id }
+            });
+            if (emailExists) {
+                return res.status(400).json({ message: 'Email already in use by another school' });
+            }
+            school.email = email.toLowerCase();
+        }
+
         school.isDataVisibleToSchool = isDataVisibleToSchool === 'true' || isDataVisibleToSchool === true;
 
         if (req.file) {
@@ -694,6 +713,7 @@ router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, 
             _id: school._id,
             schoolId: school.schoolId,
             name: school.name,
+            email: school.email, // Return updated email
             logo: school.logo,
             address: school.address,
             contact: school.contact,
@@ -707,6 +727,15 @@ router.put('/schools/:id', protect, isAdmin, upload.single('logo'), async (req, 
         res.json(response);
     } catch (error) {
         console.error('Update school error:', error);
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Duplicate field value entered' });
+        }
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+        }
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ${error.path}: ${error.value}` });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -1915,6 +1944,9 @@ router.put('/schools/:id/tests', protect, isAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Update tests error:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ${error.path}: ${error.value}` });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });

@@ -13,7 +13,7 @@ import AdminTickets from './pages/admin/AdminTickets';
 import AdminManagement from './pages/admin/AdminManagement';
 import SchoolDashboard from './pages/school/SchoolDashboard';
 import StudentManagement from './pages/school/StudentManagement';
-import SchoolTests from './pages/school/SchoolTests';
+
 import SchoolAnalytics from './pages/school/SchoolAnalytics';
 import SchoolBranches from './pages/school/SchoolBranches';
 import SchoolSupport from './pages/school/SchoolSupport';
@@ -119,11 +119,7 @@ function App() {
                     <StudentManagement />
                 </ProtectedRoute>
             } />
-            <Route path="/school/tests" element={
-                <ProtectedRoute allowedRoles={['school']}>
-                    <SchoolTests />
-                </ProtectedRoute>
-            } />
+
             <Route path="/school/analytics" element={
                 <ProtectedRoute allowedRoles={['school']}>
                     <SchoolAnalytics />

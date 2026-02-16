@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -212,7 +212,7 @@ const SchoolManagement = () => {
                 sendEmail: false, // Don't send email when editing
                 logo: null,
                 type: school.type || 'super',
-                parentId: school.parentId
+                parentId: school.parentId?._id || school.parentId || null
             });
         } else {
             setEditingSchool(null);
@@ -545,8 +545,8 @@ const SchoolManagement = () => {
                     </thead>
                     <tbody>
                         {filteredSchools.map((school) => (
-                            <>
-                                <tr key={school._id}>
+                            <React.Fragment key={school._id}>
+                                <tr>
                                     <td>
                                         <div className="school-info-cell">
                                             <div className="school-logo-sm">
@@ -751,7 +751,7 @@ const SchoolManagement = () => {
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>

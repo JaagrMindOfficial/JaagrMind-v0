@@ -32,7 +32,6 @@ const adminMenuItems = [
 const schoolMenuItems = [
     { path: '/school', icon: faHouse, label: 'Dashboard', exact: true },
     { path: '/school/students', icon: faUserGraduate, label: 'Students' },
-    { path: '/school/tests', icon: faFileLines, label: 'Check-ins' },
     { path: '/school/analytics', icon: faChartLine, label: 'Insights' },
     { path: '/school/support', icon: faHeadset, label: 'Support' },
 ];
@@ -46,7 +45,6 @@ const Sidebar = () => {
         { path: '/school', icon: faHouse, label: 'Dashboard', exact: true },
         ...(user?.type !== 'sub' ? [{ path: '/school/branches', icon: faSchool, label: 'Branches' }] : []),
         { path: '/school/students', icon: faUserGraduate, label: 'Students' },
-        { path: '/school/tests', icon: faFileLines, label: 'Check-ins' },
         { path: '/school/analytics', icon: faChartLine, label: 'Insights' },
         { path: '/school/support', icon: faHeadset, label: 'Support' },
     ] : [];

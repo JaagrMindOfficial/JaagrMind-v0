@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChartBar,
@@ -22,7 +22,9 @@ import {
     faChevronDown,
     faChevronUp,
     faCircleCheck,
-    faCircleXmark
+    faCircleXmark,
+    faLightbulb,
+    faChalkboardTeacher,
 } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../components/common/Layout';
 import { useAuth } from '../../context/AuthContext';
@@ -47,7 +49,16 @@ const SKILL_AREAS = [
     { key: 'D', name: 'Digital Hygiene', icon: faMobileScreen, color: '#10B981' }
 ];
 
+const getBucketFromScore = (score) => {
+    if (score <= 14) return 'Thriving';
+    if (score <= 22) return 'Growing';
+    return 'Needs Support';
+};
+
+import AnalyticsCharts from '../../components/school/AnalyticsCharts';
+
 const SchoolAnalytics = () => {
+    // ... existing state ...
     const { user } = useAuth();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -73,6 +84,57 @@ const SchoolAnalytics = () => {
     const [studentDetailLoading, setStudentDetailLoading] = useState(false);
     const [expandedSubmission, setExpandedSubmission] = useState(null);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+    // Helper to calculate student-specific analytics for the charts
+    const getStudentAnalytics = (student) => {
+        if (!student || !student.submissions) return null;
+
+        // 1. Distributions
+        const distributions = { A: {}, B: {}, C: {}, D: {} };
+        // Initialize
+        ['A', 'B', 'C', 'D'].forEach(key => {
+            distributions[key] = { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 };
+        });
+
+        const monthlyTrends = {};
+
+        student.submissions.forEach(sub => {
+            // Distributions
+            if (sub.sectionScores) {
+                Object.entries(sub.sectionScores).forEach(([key, score]) => {
+                    const bucket = getBucketFromScore(score);
+                    if (distributions[key][bucket] !== undefined) distributions[key][bucket]++;
+                });
+            }
+
+            // Trends
+            if (sub.submittedAt) {
+                const date = new Date(sub.submittedAt);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const monthName = date.toLocaleString('default', { month: 'short' });
+
+                if (!monthlyTrends[monthKey]) {
+                    monthlyTrends[monthKey] = { totalScore: 0, count: 0, month: monthName, year: date.getFullYear() };
+                }
+                monthlyTrends[monthKey].totalScore += sub.totalScore;
+                monthlyTrends[monthKey].count++;
+            }
+        });
+
+        // Format Trends
+        const trendData = Object.entries(monthlyTrends)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([key, data]) => ({
+                name: `${data.month} ${data.year}`,
+                avgScore: (data.totalScore / data.count).toFixed(1),
+                count: data.count
+            }));
+
+        return {
+            distributions,
+            trends: { monthly: trendData }
+        };
+    };
 
     useEffect(() => {
         fetchClasses();
@@ -165,9 +227,11 @@ const SchoolAnalytics = () => {
     const fetchStudentDetail = async (studentId) => {
         setStudentDetailLoading(true);
         try {
-            const response = await api.get(`/api/school/student/${studentId}/details`);
-            setStudentDetail(response.data);
-            setExpandedSubmission(response.data.submissions?.[0]?._id || null);
+            const response = await api.get(`/api/school/students-analytics?studentId=${studentId}`);
+            // Fix: API returns { students: [...] }, so access response.data.students[0]
+            const student = response.data.students?.[0] || null;
+            setStudentDetail(student);
+            setExpandedSubmission(student?.submissions?.[0]?._id || null);
         } catch (error) {
             console.error('Error fetching student details:', error);
         } finally {
@@ -227,10 +291,9 @@ const SchoolAnalytics = () => {
 
     // Get bucket for score
     const getBucketFromScore = (score) => {
-        if (score >= 8 && score <= 14) return 'Thriving';
-        if (score >= 15 && score <= 22) return 'Growing';
-        if (score >= 23 && score <= 32) return 'Needs Support';
-        return 'Unknown';
+        if (score <= 14) return 'Thriving';
+        if (score <= 22) return 'Growing';
+        return 'Needs Support';
     };
 
     if (loading && !data) {
@@ -294,12 +357,7 @@ const SchoolAnalytics = () => {
                 >
                     <FontAwesomeIcon icon={faChartBar} /> Overview
                 </button>
-                <button
-                    className={`tab-btn ${activeTab === 'skills' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('skills')}
-                >
-                    <FontAwesomeIcon icon={faBrain} /> Skill Areas
-                </button>
+
                 <button
                     className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`}
                     onClick={() => { setActiveTab('students'); fetchStudentsData({}); }}
@@ -309,63 +367,65 @@ const SchoolAnalytics = () => {
             </div>
 
             {/* Filters */}
-            <motion.div
-                className="card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{ marginBottom: '24px', padding: '16px 24px' }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                    <FontAwesomeIcon icon={faFilter} style={{ color: 'var(--primary-purple)' }} />
+            {activeTab === 'overview' && (
+                <motion.div
+                    className="card"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ marginBottom: '24px', padding: '16px 24px' }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        <FontAwesomeIcon icon={faFilter} style={{ color: 'var(--primary-purple)' }} />
 
-                    {/* Branch Filter for Super School */}
-                    {branches.length > 0 && (
+                        {/* Branch Filter for Super School */}
+                        {branches.length > 0 && (
+                            <select
+                                className="form-input"
+                                value={selectedBranch}
+                                onChange={(e) => {
+                                    setSelectedBranch(e.target.value);
+                                    setFilters(prev => ({ ...prev, class: '', section: '' }));
+                                }}
+                                style={{ width: 'auto', minWidth: '180px' }}
+                            >
+                                <option value="">All Branches</option>
+                                {branches.map(branch => (
+                                    <option key={branch._id} value={branch._id}>{branch.name}</option>
+                                ))}
+                            </select>
+                        )}
+
                         <select
                             className="form-input"
-                            value={selectedBranch}
-                            onChange={(e) => {
-                                setSelectedBranch(e.target.value);
-                                setFilters(prev => ({ ...prev, class: '', section: '' }));
-                            }}
-                            style={{ width: 'auto', minWidth: '180px' }}
+                            value={filters.class}
+                            onChange={handleClassChange}
+                            style={{ width: 'auto', minWidth: '150px' }}
                         >
-                            <option value="">All Branches</option>
-                            {branches.map(branch => (
-                                <option key={branch._id} value={branch._id}>{branch.name}</option>
+                            <option value="">All Classes</option>
+                            {uniqueClasses.map(c => (
+                                <option key={c} value={c}>{c}</option>
                             ))}
                         </select>
-                    )}
-
-                    <select
-                        className="form-input"
-                        value={filters.class}
-                        onChange={handleClassChange}
-                        style={{ width: 'auto', minWidth: '150px' }}
-                    >
-                        <option value="">All Classes</option>
-                        {uniqueClasses.map(c => (
-                            <option key={c} value={c}>{c}</option>
-                        ))}
-                    </select>
-                    <select
-                        className="form-input"
-                        value={filters.section}
-                        onChange={handleSectionChange}
-                        style={{ width: 'auto', minWidth: '150px' }}
-                        disabled={!filters.class}
-                    >
-                        <option value="">All Sections</option>
-                        {getSectionsForClass(filters.class).map(s => (
-                            <option key={s} value={s}>{s}</option>
-                        ))}
-                    </select>
-                    {(filters.class || filters.section) && (
-                        <button className="btn btn-outline btn-sm" onClick={clearFilters}>
-                            Clear Filters
-                        </button>
-                    )}
-                </div>
-            </motion.div>
+                        <select
+                            className="form-input"
+                            value={filters.section}
+                            onChange={handleSectionChange}
+                            style={{ width: 'auto', minWidth: '150px' }}
+                            disabled={!filters.class}
+                        >
+                            <option value="">All Sections</option>
+                            {getSectionsForClass(filters.class).map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                        {(filters.class || filters.section) && (
+                            <button className="btn btn-outline btn-sm" onClick={clearFilters}>
+                                Clear Filters
+                            </button>
+                        )}
+                    </div>
+                </motion.div>
+            )}
 
             {/* Overview Tab */}
             {activeTab === 'overview' && (
@@ -426,295 +486,57 @@ const SchoolAnalytics = () => {
                         </motion.div>
                     </div>
 
-                    {/* Charts Row */}
-                    <div className="grid grid-2 mb-6">
-                        {/* Bucket Distribution Donut */}
+                    {/* Participation Chart */}
+                    {data?.participationByGrade && data.participationByGrade.length > 0 && (
                         <motion.div
-                            className="card"
+                            className="card mb-6"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
+                            transition={{ delay: 0.35 }}
                         >
                             <h3 className="card-title mb-4">
-                                <FontAwesomeIcon icon={faChartBar} style={{ marginRight: '8px', color: 'var(--primary-purple)' }} />
-                                Skill Bucket Distribution
+                                <FontAwesomeIcon icon={faUsers} style={{ marginRight: '8px', color: 'var(--primary-purple)' }} />
+                                Participation by Grade
                             </h3>
-                            {bucketData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={280}>
-                                    <PieChart>
-                                        <Pie
-                                            data={bucketData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={100}
-                                            paddingAngle={3}
-                                            dataKey="value"
-                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                                        >
-                                            {bucketData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(value, name) => [`${value} students`, name]} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="empty-state">
-                                    <p>No check-in data available yet</p>
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '16px', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10B981' }}></span>
-                                    <span style={{ fontSize: '0.85rem' }}>Stable</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#F59E0B' }}></span>
-                                    <span style={{ fontSize: '0.85rem' }}>Emerging</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#EF4444' }}></span>
-                                    <span style={{ fontSize: '0.85rem' }}>Support Needed</span>
-                                </div>
-                            </div>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={data.participationByGrade}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                    <XAxis dataKey="grade" label={{ value: 'Grade', position: 'insideBottom', offset: -5 }} />
+                                    <YAxis label={{ value: 'Students', angle: -90, position: 'insideLeft' }} />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="completed" name="Completed" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
+                                    <Bar dataKey="pending" name="Pending" stackId="a" fill="#E2E8F0" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </motion.div>
+                    )}
 
-                        {/* Skill Area Breakdown */}
-                        <motion.div
-                            className="card"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                        >
-                            <h3 className="card-title mb-4">
-                                <FontAwesomeIcon icon={faBrain} style={{ marginRight: '8px', color: 'var(--primary-purple)' }} />
-                                Skill Area Averages
-                            </h3>
-                            {skillAreaData.length > 0 && skillAreaData.some(s => s.score > 0) ? (
-                                <ResponsiveContainer width="100%" height={280}>
-                                    <BarChart data={skillAreaData} layout="vertical" barSize={20}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" horizontal={true} vertical={false} />
-                                        <XAxis type="number" domain={[0, 32]} tick={{ fontSize: 11 }} />
-                                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                                        <Tooltip
-                                            cursor={{ fill: 'transparent' }}
-                                            formatter={(value, name, props) => [`Index: ${value}`, props.payload.fullName]}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(255,255,255,0.95)', color: '#1f2937' }}
-                                            itemStyle={{ color: '#1f2937' }}
-                                        />
-                                        <Bar dataKey="score" radius={[0, 8, 8, 0]}>
-                                            {skillAreaData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="empty-state">
-                                    <p>No skill data available yet</p>
-                                </div>
-                            )}
-                            <p className="text-muted text-center" style={{ fontSize: '0.8rem', marginTop: '12px' }}>
-                                Lower index = stronger skills (8-14: Stable, 15-22: Emerging, 23-32: Needs Support)
-                            </p>
-                        </motion.div>
+                    {/* NEW: Analytics Charts Component */}
+                    <AnalyticsCharts data={data} variant="school" />
+
+                    {/* Guidelines Footer */}
+                    <div className="mt-8 p-6 bg-white rounded-xl border border-blue-100 items-center text-center">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                            <FontAwesomeIcon icon={faLightbulb} size="lg" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">What should we do next?</h3>
+                        <p className="text-gray-600 max-w-2xl mx-auto mb-4">
+                            Patterns matter more than individuals. If you see younger grades showing lower focus or middle grades showing lower social confidence,
+                            this helps contextualize struggles as developmental, not personal.
+                        </p>
+                        <p className="text-sm text-gray-500">
+                            If you have questions about implementation, data use, or best practices, the Jaagr Mind team is available to support your school.
+                            We work in strong partnership with educators, emotional regulation coaches, and experts.
+                        </p>
                     </div>
-
-                    {/* Recent Submissions */}
-                    <motion.div
-                        className="card"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                    >
-                        <h3 className="card-title mb-4">
-                            <FontAwesomeIcon icon={faUserGraduate} style={{ marginRight: '8px', color: 'var(--primary-purple)' }} />
-                            Recent Check-ins
-                        </h3>
-                        {data?.recentSubmissions?.length > 0 ? (
-                            <div className="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Student</th>
-                                            {data.aggregated && (
-                                                <th
-                                                    style={{ cursor: 'pointer' }}
-                                                    onClick={() => {
-                                                        const direction = sortConfig?.key === 'branch' && sortConfig.direction === 'asc' ? 'desc' : 'asc';
-                                                        setSortConfig({ key: 'branch', direction });
-
-                                                        // Sort function
-                                                        const sorted = [...data.recentSubmissions].sort((a, b) => {
-                                                            const nameA = a.schoolId?.name || '';
-                                                            const nameB = b.schoolId?.name || '';
-                                                            return direction === 'asc'
-                                                                ? nameA.localeCompare(nameB)
-                                                                : nameB.localeCompare(nameA);
-                                                        });
-
-                                                        // Direct mutation for simple state update in this context, 
-                                                        // or better: update data state. 
-                                                        // Assuming setData is available in scope.
-                                                        setData(prev => ({ ...prev, recentSubmissions: sorted }));
-                                                    }}
-                                                >
-                                                    Branch {sortConfig?.key === 'branch' && (sortConfig.direction === 'asc' ? <FontAwesomeIcon icon={faChevronUp} size="xs" /> : <FontAwesomeIcon icon={faChevronDown} size="xs" />)}
-                                                </th>
-                                            )}
-                                            <th>Class</th>
-                                            <th>Index</th>
-                                            <th>Focus</th>
-                                            <th>Self-Esteem</th>
-                                            <th>Social</th>
-                                            <th>Digital</th>
-                                            <th>Status</th>
-                                            <th>Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.recentSubmissions.slice(0, 10).map((sub) => (
-                                            <tr key={sub._id}>
-                                                <td>
-                                                    <button
-                                                        className="link-button"
-                                                        onClick={() => handleStudentClick(sub.studentId?._id, sub.studentId?.name)}
-                                                        style={{ fontWeight: 500, color: 'var(--primary-purple)', cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left' }}
-                                                    >
-                                                        {sub.studentId?.name || 'N/A'}
-                                                    </button>
-                                                </td>
-                                                {data.aggregated && (
-                                                    <td>
-                                                        <span className="badge" style={{ background: '#f3f4f6', color: '#4b5563', border: '1px solid #e5e7eb' }}>
-                                                            {sub.schoolId?.name || 'Main'}
-                                                        </span>
-                                                    </td>
-                                                )}
-                                                <td>{sub.studentId?.class} {sub.studentId?.section}</td>
-                                                <td><strong>{sub.totalScore}</strong></td>
-                                                <td>{sub.sectionScores?.A || '-'}</td>
-                                                <td>{sub.sectionScores?.B || '-'}</td>
-                                                <td>{sub.sectionScores?.C || '-'}</td>
-                                                <td>{sub.sectionScores?.D || '-'}</td>
-                                                <td>
-                                                    <span className={`badge ${sub.assignedBucket?.includes('Stable') ? 'badge-success' :
-                                                        sub.assignedBucket?.includes('Emerging') ? 'badge-warning' : 'badge-danger'
-                                                        }`}>
-                                                        {sub.assignedBucket?.replace('Skill ', '')}
-                                                    </span>
-                                                </td>
-                                                <td>{new Date(sub.submittedAt).toLocaleDateString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="empty-state">
-                                <p>No check-ins completed yet</p>
-                            </div>
-                        )}
-                    </motion.div>
                 </>
             )}
 
             {/* Skills Tab */}
-            {activeTab === 'skills' && (
-                <>
-                    <div className="grid grid-2 mb-6">
-                        {SKILL_AREAS.map((skill, index) => {
-                            const score = data?.sectionAverages?.[skill.key] || 0;
-                            const bucket = getBucketFromScore(score);
-                            const bucketColor = bucket === 'Thriving' ? '#10B981' : bucket === 'Growing' ? '#F59E0B' : '#EF4444';
-
-                            return (
-                                <motion.div
-                                    key={skill.key}
-                                    className="card"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-                                        <div style={{
-                                            width: '56px',
-                                            height: '56px',
-                                            borderRadius: '16px',
-                                            background: `linear-gradient(135deg, ${skill.color}, ${skill.color}dd)`,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'white',
-                                            fontSize: '1.5rem'
-                                        }}>
-                                            <FontAwesomeIcon icon={skill.icon} />
-                                        </div>
-                                        <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{skill.name}</h3>
-                                            <span className="badge" style={{ background: bucketColor, color: 'white', marginTop: '4px' }}>
-                                                {bucket}
-                                            </span>
-                                        </div>
-                                        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                                            <div style={{ fontSize: '2rem', fontWeight: 700, color: skill.color }}>{score}</div>
-                                            <div className="text-muted" style={{ fontSize: '0.8rem' }}>Avg Index</div>
-                                        </div>
-                                    </div>
-
-                                    <div style={{
-                                        height: '8px',
-                                        background: 'var(--primary-bg)',
-                                        borderRadius: '4px',
-                                        overflow: 'hidden'
-                                    }}>
-                                        <div style={{
-                                            height: '100%',
-                                            width: `${Math.min((score / 32) * 100, 100)}%`,
-                                            background: `linear-gradient(90deg, ${skill.color}, ${skill.color}aa)`,
-                                            borderRadius: '4px',
-                                            transition: 'width 0.5s ease'
-                                        }}></div>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                        <span>8 (Stable)</span>
-                                        <span>22 (Emerging)</span>
-                                        <span>32 (Support)</span>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-
-                    <motion.div
-                        className="card"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        <h3 className="card-title mb-4">Skill Area Comparison</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={skillAreaData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                                <YAxis domain={[0, 32]} />
-                                <Tooltip
-                                    cursor={{ fill: 'transparent' }}
-                                    formatter={(value) => [`${value}`, 'Avg Index']}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(255,255,255,0.95)', color: '#1f2937' }}
-                                    itemStyle={{ color: '#1f2937' }}
-                                />
-                                <Bar dataKey="score" radius={[8, 8, 0, 0]}>
-                                    {skillAreaData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </motion.div>
-                </>
-            )}
 
             {/* Students Tab */}
             {activeTab === 'students' && (
@@ -737,7 +559,6 @@ const SchoolAnalytics = () => {
                             className="form-input"
                             placeholder="Search name or ID..."
                             value={studentFilters.search}
-                            onChange={(e) => handleStudentFilterChange('search', e.target.value)}
                             onChange={(e) => handleStudentFilterChange('search', e.target.value)}
                             style={{ maxWidth: '200px' }}
                         />
@@ -942,32 +763,39 @@ const SchoolAnalytics = () => {
                                                     <FontAwesomeIcon icon={faUserGraduate} style={{ marginRight: '6px' }} />
                                                     Full Name
                                                 </div>
-                                                <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{studentDetail.student.name}</div>
+                                                <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{studentDetail.name}</div>
                                             </div>
                                             <div>
                                                 <div className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
                                                     <FontAwesomeIcon icon={faIdCard} style={{ marginRight: '6px' }} />
                                                     Access ID
                                                 </div>
-                                                <code style={{ fontSize: '0.95rem' }}>{studentDetail.student.accessId}</code>
+                                                <code style={{ fontSize: '0.95rem' }}>{studentDetail.accessId}</code>
                                             </div>
                                             <div>
                                                 <div className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>Class</div>
-                                                <div style={{ fontWeight: 500 }}>{studentDetail.student.class} {studentDetail.student.section}</div>
+                                                <div style={{ fontWeight: 500 }}>{studentDetail.class} {studentDetail.section}</div>
                                             </div>
                                             <div>
                                                 <div className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>Roll No</div>
-                                                <div>{studentDetail.student.rollNo || '-'}</div>
+                                                <div>{studentDetail.rollNo || '-'}</div>
                                             </div>
                                             <div>
                                                 <div className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>
                                                     <FontAwesomeIcon icon={faClipboardCheck} style={{ marginRight: '6px' }} />
                                                     Total Check-ins
                                                 </div>
-                                                <div style={{ fontWeight: 600, color: 'var(--primary-purple)' }}>{studentDetail.totalSubmissions}</div>
+                                                <div style={{ fontWeight: 600, color: 'var(--primary-purple)' }}>{studentDetail.submissions.length}</div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Student Analytics Charts */}
+                                    <AnalyticsCharts
+                                        data={getStudentAnalytics(studentDetail)}
+                                        variant="student"
+                                        title="Student Performance Profile"
+                                    />
 
                                     {/* Submissions */}
                                     {studentDetail.submissions.length > 0 ? (

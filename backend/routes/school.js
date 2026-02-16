@@ -743,6 +743,55 @@ router.post('/students/import', protect, isSchoolAdmin, upload.single('file'), a
     }
 });
 
+// @route   PUT /api/school/students/promote-class
+// @desc    Increment class for all (or filtered) students by 1
+// @access  School Admin
+router.put('/students/promote-class', protect, isSchoolAdmin, async (req, res) => {
+    try {
+        const { filterClass, filterSection, studentIds } = req.body;
+
+        let query = { schoolId: req.school._id, isActive: true };
+
+        // If super school, include branches
+        if (req.school.type === 'super') {
+            const branches = await School.find({ parentId: req.school._id }).distinct('_id');
+            query.schoolId = { $in: [req.school._id, ...branches] };
+        }
+
+        // If specific students selected, use those
+        if (studentIds && studentIds.length > 0) {
+            query._id = { $in: studentIds };
+        } else {
+            // Otherwise use filters
+            if (filterClass) query.class = filterClass;
+            if (filterSection) query.section = filterSection;
+        }
+
+        const students = await Student.find(query);
+
+        let updatedCount = 0;
+        let skippedCount = 0;
+        for (const student of students) {
+            const currentClass = parseInt(student.class);
+            if (!isNaN(currentClass) && currentClass < 12) {
+                student.class = (currentClass + 1).toString();
+                await student.save();
+                updatedCount++;
+            } else if (currentClass >= 12) {
+                skippedCount++;
+            }
+        }
+
+        let message = `Class updated for ${updatedCount} students`;
+        if (skippedCount > 0) message += ` (${skippedCount} already in class 12, skipped)`;
+
+        res.json({ message, updatedCount, skippedCount });
+    } catch (error) {
+        console.error('Promote class error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // @route   PUT /api/school/students/:id
 // @desc    Update student
 // @access  School Admin
@@ -895,6 +944,76 @@ router.put('/students/:id/reset', protect, isSchoolAdmin, async (req, res) => {
     }
 });
 
+
+
+// @route   POST /api/school/students/bulk-delete
+// @desc    Delete multiple students at once (with archival)
+// @access  School Admin
+router.post('/students/bulk-delete', protect, isSchoolAdmin, async (req, res) => {
+    try {
+        const { studentIds } = req.body;
+
+        if (!studentIds || studentIds.length === 0) {
+            return res.status(400).json({ message: 'No students selected' });
+        }
+
+        const students = await Student.find({
+            _id: { $in: studentIds },
+            schoolId: req.school.type === 'super'
+                ? { $in: [req.school._id, ...(await School.find({ parentId: req.school._id }).distinct('_id'))] }
+                : req.school._id,
+            isActive: true
+        });
+
+        let deletedCount = 0;
+        for (const student of students) {
+            // Get submissions for archival
+            const submissions = await Submission.find({ studentId: student._id });
+
+            // Archive
+            await ArchivedData.create({
+                type: 'student',
+                archivedBy: 'school',
+                reason: 'bulk_deletion',
+                studentData: {
+                    _id: student._id,
+                    accessId: student.accessId,
+                    name: student.name,
+                    rollNo: student.rollNo,
+                    class: student.class,
+                    section: student.section,
+                    schoolId: student.schoolId,
+                    schoolName: req.school.name,
+                    testStatus: student.testStatus,
+                    createdAt: student.createdAt
+                },
+                studentSubmissions: submissions.map(sub => ({
+                    assessmentId: sub.assessmentId,
+                    totalScore: sub.totalScore,
+                    sectionScores: sub.sectionScores,
+                    assignedBucket: sub.assignedBucket,
+                    submittedAt: sub.submittedAt
+                })),
+                stats: { submissionCount: submissions.length }
+            });
+
+            // Delete submissions
+            await Submission.deleteMany({ studentId: student._id });
+            // Delete student
+            await Student.findByIdAndDelete(student._id);
+            deletedCount++;
+        }
+
+        res.json({
+            message: `${deletedCount} students deleted successfully`,
+            deletedCount
+        });
+    } catch (error) {
+        console.error('Bulk delete error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // @route   GET /api/school/classes
 // @desc    Get unique classes and sections
 // @access  School Admin
@@ -1004,6 +1123,23 @@ router.post('/tests/assign', protect, isSchoolAdmin, async (req, res) => {
                     isCompleted: false
                 });
                 await student.save();
+            } else if (existingTest.isCompleted) {
+                // Re-assign: Reset status for new attempt
+                // Previous submission is already saved in Submission collection
+                const testIndex = student.testStatus.findIndex(
+                    t => t.assessmentId.toString() === assessmentId
+                );
+
+                if (testIndex !== -1) {
+                    student.testStatus[testIndex].isCompleted = false;
+                    student.testStatus[testIndex].score = 0;
+                    student.testStatus[testIndex].sectionScores = { A: 0, B: 0, C: 0, D: 0 };
+                    student.testStatus[testIndex].sectionBuckets = { A: '', B: '', C: '', D: '' };
+                    student.testStatus[testIndex].bucket = '';
+                    student.testStatus[testIndex].startedAt = null;
+                    student.testStatus[testIndex].completedAt = null;
+                    await student.save();
+                }
             }
         }
 
@@ -1109,16 +1245,32 @@ router.get('/test-status', protect, isSchoolAdmin, async (req, res) => {
     }
 });
 
-// @route   GET /api/school/export-ids
-// @desc    Export access IDs to Excel
+// @route   POST /api/school/export-ids
+// @desc    Export access IDs to Excel (supports selected students or filters)
 // @access  School Admin
-router.get('/export-ids', protect, isSchoolAdmin, async (req, res) => {
+router.post('/export-ids', protect, isSchoolAdmin, async (req, res) => {
     try {
-        const { class: className, section } = req.query;
+        const { class: className, section, studentIds } = req.body;
 
-        let query = { schoolId: req.school._id, isActive: true };
-        if (className) query.class = className;
-        if (section) query.section = section;
+        let query = { isActive: true };
+
+        if (studentIds && studentIds.length > 0) {
+            // Export only selected students (no schoolId filter needed, they were already visible)
+            query._id = { $in: studentIds };
+        } else {
+            // Apply school scope (include branches for super schools)
+            if (req.school.type === 'super') {
+                query.$or = [
+                    { schoolId: req.school._id },
+                    { parentId: req.school._id }
+                ];
+            } else {
+                query.schoolId = req.school._id;
+            }
+            // Use filters
+            if (className) query.class = className;
+            if (section) query.section = section;
+        }
 
         const students = await Student.find(query)
             .select('accessId name rollNo class section')
@@ -1189,9 +1341,21 @@ router.get('/analytics', protect, isSchoolAdmin, async (req, res) => {
         if (className) studentQuery.class = className;
         if (section) studentQuery.section = section;
 
-        // Get filtered student IDs
-        const filteredStudents = await Student.find(studentQuery).select('_id');
+        // Get filtered student IDs with class info for participation stats
+        const filteredStudents = await Student.find(studentQuery).select('_id class');
         const studentIds = filteredStudents.map(s => s._id);
+
+        // Calculate Participation by Grade
+        const participationByGrade = {};
+
+        // 1. Initialize with total students
+        filteredStudents.forEach(s => {
+            const grade = s.class || 'Unknown';
+            if (!participationByGrade[grade]) {
+                participationByGrade[grade] = { grade, total: 0, completed: 0, pending: 0 };
+            }
+            participationByGrade[grade].total++;
+        });
 
         // Get submissions for filtered students (only complete ones for analytics)
         // Note: We can rely on studentId filtering here since we already filtered students based on school/parent logic
@@ -1203,10 +1367,38 @@ router.get('/analytics', protect, isSchoolAdmin, async (req, res) => {
             .populate('schoolId', 'name') // Populate school name for aggregation view
             .sort({ submittedAt: -1 });
 
+        // 2. Count completed
+        const completedStudentIds = new Set();
+        submissions.forEach(sub => {
+            if (sub.studentId) {
+                // Track unique students who have completed
+                if (!completedStudentIds.has(sub.studentId._id.toString())) {
+                    completedStudentIds.add(sub.studentId._id.toString());
+
+                    const grade = sub.studentId.class || 'Unknown';
+                    if (participationByGrade[grade]) {
+                        participationByGrade[grade].completed++;
+                    }
+                }
+            }
+        });
+
+        // 3. Calculate pending and format as array
+        const participationData = Object.values(participationByGrade).map(p => ({
+            ...p,
+            pending: p.total - p.completed
+        })).sort((a, b) => {
+            // Try to sort numerically if grades are numbers, else string
+            const numA = parseInt(a.grade);
+            const numB = parseInt(b.grade);
+            return !isNaN(numA) && !isNaN(numB) ? numA - numB : a.grade.localeCompare(b.grade);
+        });
+
         const analytics = calculateAnalytics(submissions);
 
         res.json({
             ...analytics,
+            participationByGrade: participationData,
             recentSubmissions: submissions.slice(0, 20),
             filters: { class: className || null, section: section || null },
             aggregated: req.school.type === 'super' && !req.query.schoolId, // Updated logic: true if super school and no specific school filter
@@ -1256,7 +1448,7 @@ router.get('/students-analytics', protect, isSchoolAdmin, async (req, res) => {
             });
         }
 
-        const { class: className, section, assessmentId, search } = req.query;
+        const { class: className, section, assessmentId, search, studentId } = req.query;
 
         let targetSchoolId = req.school._id;
         let isAggregated = false;
@@ -1281,7 +1473,9 @@ router.get('/students-analytics', protect, isSchoolAdmin, async (req, res) => {
         // Build student query
         let studentQuery = { isActive: true };
 
-        if (isAggregated) {
+        if (studentId) {
+            studentQuery._id = studentId;
+        } else if (isAggregated) {
             studentQuery.$or = [
                 { schoolId: req.school._id },
                 { parentId: req.school._id }
@@ -1478,6 +1672,34 @@ router.get('/student/:id/details', protect, isSchoolAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Student details error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/school/analytics/student/:studentId/attempts/:assessmentId
+// @desc    Get all attempts for a student on a specific assessment
+// @access  School Admin
+router.get('/analytics/student/:studentId/attempts/:assessmentId', protect, isSchoolAdmin, async (req, res) => {
+    try {
+        const { studentId, assessmentId } = req.params;
+
+        // Verify student belongs to school (or sub-school)
+        const student = await Student.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const submissions = await Submission.find({
+            studentId,
+            assessmentId,
+            status: 'complete'
+        })
+            .select('totalScore sectionScores assignedBucket submittedAt timeTaken')
+            .sort({ submittedAt: 1 });
+
+        res.json(submissions);
+    } catch (error) {
+        console.error('Get student attempts error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

@@ -145,6 +145,9 @@ const calculateAnalytics = (submissions) => {
         D: { 'Skill Stable': 0, 'Skill Emerging': 0, 'Skill Support Needed': 0 }
     };
 
+    // Grade-wise aggregation
+    const gradeTotals = {};
+
     submissions.forEach(sub => {
         totalScore += sub.totalScore || 0;
         totalTime += sub.timeTaken || 0;
@@ -152,28 +155,110 @@ const calculateAnalytics = (submissions) => {
         const bucket = sub.assignedBucket || 'Unknown';
         bucketDistribution[bucket] = (bucketDistribution[bucket] || 0) + 1;
 
+        // Grade processing
+        const grade = sub.studentId?.class;
+        if (grade) {
+            if (!gradeTotals[grade]) {
+                gradeTotals[grade] = { count: 0, A: 0, B: 0, C: 0, D: 0 };
+            }
+            gradeTotals[grade].count++;
+        }
+
         if (sub.sectionScores) {
             // A: Focus & Attention
             sectionTotals.A += sub.sectionScores.A || 0;
             const bucketA = getBucketLabel(sub.sectionScores.A || 0);
             if (sectionDistributions.A[bucketA] !== undefined) sectionDistributions.A[bucketA]++;
+            if (grade) gradeTotals[grade].A += sub.sectionScores.A || 0;
 
             // B: Self-Esteem
             sectionTotals.B += sub.sectionScores.B || 0;
             const bucketB = getBucketLabel(sub.sectionScores.B || 0);
             if (sectionDistributions.B[bucketB] !== undefined) sectionDistributions.B[bucketB]++;
+            if (grade) gradeTotals[grade].B += sub.sectionScores.B || 0;
 
             // C: Social Confidence
             sectionTotals.C += sub.sectionScores.C || 0;
             const bucketC = getBucketLabel(sub.sectionScores.C || 0);
             if (sectionDistributions.C[bucketC] !== undefined) sectionDistributions.C[bucketC]++;
+            if (grade) gradeTotals[grade].C += sub.sectionScores.C || 0;
 
             // D: Digital Hygiene
             sectionTotals.D += sub.sectionScores.D || 0;
             const bucketD = getBucketLabel(sub.sectionScores.D || 0);
             if (sectionDistributions.D[bucketD] !== undefined) sectionDistributions.D[bucketD]++;
+            if (grade) gradeTotals[grade].D += sub.sectionScores.D || 0;
         }
     });
+
+    // Calculate Grade Averages
+    const averagesByGrade = Object.entries(gradeTotals).map(([grade, data]) => ({
+        grade,
+        A: Math.round(data.A / data.count * 10) / 10,
+        B: Math.round(data.B / data.count * 10) / 10,
+        C: Math.round(data.C / data.count * 10) / 10,
+        D: Math.round(data.D / data.count * 10) / 10,
+        count: data.count
+    })).sort((a, b) => {
+        // Try to sort numerically if grades are numbers, else string
+        const numA = parseInt(a.grade);
+        const numB = parseInt(b.grade);
+        return !isNaN(numA) && !isNaN(numB) ? numA - numB : a.grade.localeCompare(b.grade);
+    });
+
+    // Calculate Trends (Monthly & Weekly)
+    const monthlyTrends = {};
+    const weeklyTrends = {};
+
+    // Helper to get week number
+    const getWeekNumber = (d) => {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return `${d.getUTCFullYear()}-W${weekNo}`;
+    };
+
+    submissions.forEach(sub => {
+        if (!sub.submittedAt || !sub.totalScore) return;
+
+        const date = new Date(sub.submittedAt);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+        const weekKey = getWeekNumber(date);
+
+        // Monthly
+        if (!monthlyTrends[monthKey]) {
+            monthlyTrends[monthKey] = { totalScore: 0, count: 0, month: date.toLocaleString('default', { month: 'short' }), year: date.getFullYear() };
+        }
+        monthlyTrends[monthKey].totalScore += sub.totalScore;
+        monthlyTrends[monthKey].count++;
+
+        // Weekly
+        if (!weeklyTrends[weekKey]) {
+            weeklyTrends[weekKey] = { totalScore: 0, count: 0, week: weekKey };
+        }
+        weeklyTrends[weekKey].totalScore += sub.totalScore;
+        weeklyTrends[weekKey].count++;
+    });
+
+    // Format trends for chart
+    const monthlyTrendData = Object.entries(monthlyTrends)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([key, data]) => ({
+            name: `${data.month} ${data.year}`,
+            avgScore: Math.round(data.totalScore / data.count * 10) / 10,
+            count: data.count
+        }))
+        .slice(-6); // Last 6 months
+
+    const weeklyTrendData = Object.entries(weeklyTrends)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([key, data]) => ({
+            name: data.week,
+            avgScore: Math.round(data.totalScore / data.count * 10) / 10,
+            count: data.count
+        }))
+        .slice(-8); // Last 8 weeks
 
     return {
         totalSubmissions: total,
@@ -186,7 +271,12 @@ const calculateAnalytics = (submissions) => {
             C: Math.round(sectionTotals.C / total * 10) / 10,
             D: Math.round(sectionTotals.D / total * 10) / 10
         },
-        sectionDistributions
+        sectionDistributions,
+        averagesByGrade,
+        trends: {
+            monthly: monthlyTrendData,
+            weekly: weeklyTrendData
+        }
     };
 };
 
