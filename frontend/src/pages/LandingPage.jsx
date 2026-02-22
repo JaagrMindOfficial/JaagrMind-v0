@@ -371,7 +371,7 @@ const LandingPage = () => {
                                 </div>
                                 <div>
                                     <h4>Phone</h4>
-                                    <p>+91 80058 73864</p>
+                                    <p>+91 78200 01282</p>
                                 </div>
                             </div>
                             <div className="contact-item">
