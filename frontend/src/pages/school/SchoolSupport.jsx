@@ -374,7 +374,7 @@ const SchoolSupport = () => {
                                 </div>
                                 <div>
                                     <h5 style={{ marginBottom: '4px' }}>Call Us</h5>
-                                    <p style={{ fontSize: '0.9rem' }}>+91-8373922112</p>
+                                    <p style={{ fontSize: '0.9rem' }}>+91-78200-01282</p>
                                 </div>
                             </div>
 
